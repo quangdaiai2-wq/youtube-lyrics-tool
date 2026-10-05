@@ -1,0 +1,104 @@
+# 🎵 Tool trích xuất lời bài hát YouTube + dịch sang tiếng Việt
+
+Dán một link YouTube → tool lấy lời bài hát → **dịch sang tiếng Việt bằng AI** hoặc cho AI phân tích nội dung.
+
+Chạy hoàn toàn trên máy của bạn. Lời bài hát không bị gửi đi đâu ngoài YouTube.
+
+---
+
+## ✨ Tính năng chính
+
+| Tính năng | Mô tả |
+|---|---|
+| 📝 **Trích xuất lời** | Tự lấy phụ đề có sẵn; nếu không có thì tải audio và dùng AI nghe để chép lại |
+| 🌐 **Dịch sang tiếng Việt** | Dịch từ **bất kỳ ngôn ngữ nào** sang tiếng Việt, chia đoạn sẵn, bấm Copy là dùng |
+| 🔀 **Đổi model trên web** | Chọn dịch vụ và model AI ngay trên giao diện — không cần sửa file cấu hình |
+| 📄 **Chuyển thành đoạn văn** | Gộp lời rời rạc kèm mốc thời gian thành đoạn văn liền mạch |
+| 📊 **Thanh tiến độ %** | Hiển thị tiến trình tải và nhận dạng theo thời gian thực |
+| 🤖 **Phân tích bằng AI** | Phân tích chủ đề, cảm xúc, thông điệp của bài hát |
+
+---
+
+## 🚀 Cách chạy (dành cho người không biết lập trình)
+
+**Bước 1:** Nhấp đúp vào file `yt_lyrics/BAT-TOOL.bat`
+
+**Bước 2:** Trình duyệt tự mở trang `http://127.0.0.1:5000`
+
+**Bước 3:** Dán link YouTube → bấm **Trích xuất lời** → bấm **⚡ Dịch ngay**
+
+> 📖 Hướng dẫn chi tiết từng bước: xem file [`yt_lyrics/HUONG-DAN.md`](yt_lyrics/HUONG-DAN.md)
+
+---
+
+## 🔑 Cấu hình khoá API (tuỳ chọn)
+
+Tool chạy được **không cần khoá API** (dùng nút "Tạo đề bài" để copy sang AI khác).
+Muốn tool **tự dịch ngay trong trang**, cần gắn khoá API:
+
+**Bước 1:** Copy file `.env.MAU` → đổi tên thành `.env`
+
+**Bước 2:** Mở `.env`, chọn dịch vụ và dán khoá vào:
+
+```
+AI_PROVIDER=nous      # nous | gemini | openai
+OPENAI_API_KEY="dan_khoa_cua_ban_vao_day"
+```
+
+**Bước 3:** Tắt và bật lại tool.
+
+Hoặc đơn giản hơn: chạy tool rồi bấm **"Đổi model / dịch vụ"** trên giao diện.
+
+### Dịch vụ AI được hỗ trợ
+
+| Dịch vụ | Địa chỉ API | Khoá bắt đầu bằng |
+|---|---|---|
+| **Nous Portal** | `inference-api.nousresearch.com/v1` | `sk-nous-` |
+| **Google Gemini** | `generativelanguage.googleapis.com/v1beta/openai` | `AIza` |
+| **OpenAI** | `api.openai.com/v1` | `sk-proj-` / `sk-` |
+
+> ⚠️ **Khoá của dịch vụ nào phải khớp `AI_PROVIDER` của dịch vụ đó.**
+> Dùng khoá Gemini mà để `AI_PROVIDER=openai` sẽ báo lỗi 401.
+
+> 🔒 **File `.env` đã được chặn khỏi Git** — khoá API sẽ không bị đẩy lên GitHub.
+
+---
+
+## 📁 Cấu trúc dự án
+
+```
+yt_lyrics/
+├── BAT-TOOL.bat            ← Nhấp đúp để chạy
+├── app.py                  ← Web server (Flask)
+├── core.py                 ← Lấy lời: phụ đề hoặc AI nghe
+├── analyzer.py             ← Gọi AI: dịch, phân tích, đổi model
+├── download_model.py       ← Tải model nhận dạng giọng nói
+├── requirements.txt        ← Danh sách thư viện cần cài
+├── HUONG-DAN.md            ← Hướng dẫn sử dụng chi tiết
+└── templates/
+    └── index.html          ← Giao diện web
+```
+
+---
+
+## 🛠️ Yêu cầu hệ thống
+
+- **Python 3.10+**
+- Kết nối Internet (để tải video từ YouTube và gọi API AI)
+- Không cần cài ffmpeg
+
+---
+
+## 📌 Ghi chú kỹ thuật
+
+- **Nhận dạng giọng nói:** dùng `faster-whisper` (model `base`, ~140 MB), tự tải về lần đầu.
+  Đổi model qua biến môi trường `WHISPER_MODEL` (`tiny` / `base` / `small` / `medium`).
+- **File audio tạm:** lưu trong thư mục tạm của hệ điều hành và **tự xoá** ngay sau khi nghe xong.
+- **Giới hạn của Whisper:** chỉ dịch được sang **tiếng Anh**. Muốn dịch sang tiếng Việt phải
+  dùng AI dịch thật qua API (đó là lý do tool có tính năng gắn khoá API).
+
+---
+
+## 📄 Giấy phép
+
+Dự án cá nhân, dùng tự do.

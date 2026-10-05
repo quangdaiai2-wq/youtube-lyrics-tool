@@ -1,0 +1,46 @@
+# ============================================================
+#  File này bảo Git KHÔNG được đẩy những file nhạy cảm lên mạng.
+#  Đại không cần mở hay sửa file này.
+# ============================================================
+
+# --- KHOÁ API: TUYỆT ĐỐI KHÔNG đẩy lên GitHub ---
+# Đây là file chứa khoá API. Nếu lọt lên mạng, người khác dùng
+# khoá của Đại để tiêu tiền. Git sẽ bỏ qua mọi file tên .env
+.env
+.env.*
+!.env.MAU
+
+# --- Ghi chú nội bộ của trợ lý (không phải code, không cần đẩy lên) ---
+.workbuddy-ai/
+
+# --- File tạm của Python (không cần thiết, tự sinh lại được) ---
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+dist/
+*.egg-info/
+
+# --- Môi trường ảo Python ---
+venv/
+.venv/
+env/
+ENV/
+
+# --- File tạm của tool ---
+*.log
+*.tmp
+*.part
+.DS_Store
+Thumbs.db
+
+# --- Thư mục lưu model AI (nặng, tự tải lại được) ---
+models/
+*.bin
+
+# --- File cấu hình của editor ---
+.vscode/
+.idea/
+*.swp

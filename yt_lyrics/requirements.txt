@@ -1,0 +1,19 @@
+# Thư viện cần cho tool trích xuất lời bài hát YouTube
+#
+# CÁCH CÀI (chỉ làm 1 lần):
+#   "C:\Users\nguye\.workbuddy-ai\binaries\python\envs\default\Scripts\python.exe" -m pip install -r requirements.txt
+#
+# GHI CHÚ VỀ PHIÊN BẢN:
+# Các phiên bản dưới đây đã được kiểm thử và chạy ổn định trên máy Đại.
+# Không tự ý nâng lên bản mới hơn ở 3 dòng có ghi chú "GHIM" —
+# bản mới hơn gây lỗi tương thích giữa các thư viện âm thanh.
+
+yt-dlp
+flask
+faster-whisper==1.1.1        # GHIM: bản 1.2.x gọi tham số không tương thích
+huggingface-hub<1.0          # GHIM: bản 1.x gây lỗi khi nạp model
+av
+numpy
+requests
+python-dotenv
+soundfile

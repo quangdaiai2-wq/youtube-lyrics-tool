@@ -1,0 +1,808 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Trích xuất lời bài hát YouTube</title>
+<style>
+  :root{
+    --bg:#f5f6f8; --card:#ffffff; --line:#e3e6ec; --text:#1b1f27;
+    --muted:#6b7280; --brand:#c0392b; --brand-soft:#fdf0ee;
+    --ok:#0f7b3f; --ok-soft:#eaf7ef; --warn:#a16207; --warn-soft:#fef8e7;
+    --blue:#1d4ed8; --blue-soft:#eef2ff;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; padding:24px 16px 64px; background:var(--bg); color:var(--text);
+    font-family:-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+    line-height:1.6;
+  }
+  .wrap{max-width:960px;margin:0 auto}
+  header{margin-bottom:20px}
+  h1{font-size:24px;margin:0 0 6px}
+  .sub{color:var(--muted);font-size:14px;margin:0}
+  .card{
+    background:var(--card);border:1px solid var(--line);border-radius:12px;
+    padding:20px;margin-bottom:16px;
+  }
+  label{display:block;font-weight:600;font-size:14px;margin-bottom:8px}
+  .row{display:flex;gap:10px;flex-wrap:wrap}
+  input[type=text]{
+    flex:1;min-width:260px;padding:12px 14px;font-size:15px;
+    border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--text);
+  }
+  input[type=text]:focus{outline:2px solid var(--brand);outline-offset:-1px;border-color:var(--brand)}
+  button{
+    padding:12px 20px;font-size:15px;font-weight:600;border-radius:8px;
+    border:1px solid var(--line);background:#fff;color:var(--text);cursor:pointer;
+  }
+  button:hover:not(:disabled){background:#f0f2f5}
+  button.primary{background:var(--brand);border-color:var(--brand);color:#fff}
+  button.primary:hover:not(:disabled){background:#a93226}
+  button:disabled{opacity:.5;cursor:not-allowed}
+  .hint{font-size:13px;color:var(--muted);margin-top:8px}
+  .checkline{display:flex;align-items:center;gap:8px;margin-top:12px;font-size:14px;color:var(--muted)}
+  .console{
+    background:#1b1f27;color:#d7dce5;border-radius:8px;padding:12px 14px;
+    font-family:ui-monospace,Consolas,monospace;font-size:12.5px;
+    max-height:220px;overflow:auto;white-space:pre-wrap;margin-top:14px;
+  }
+  .console:empty{display:none}
+
+  /* ---- Thanh tiến độ ---- */
+  .progress-box{
+    margin-top:14px;padding:14px 16px;border-radius:10px;
+    background:#fafbfc;border:1px solid var(--line);
+  }
+  .progress-head{
+    display:flex;justify-content:space-between;align-items:baseline;
+    gap:12px;margin-bottom:8px;flex-wrap:wrap;
+  }
+  .progress-label{font-weight:600;font-size:14px}
+  .progress-pct{
+    font-weight:700;font-size:17px;color:var(--brand);
+    font-variant-numeric:tabular-nums;
+  }
+  .progress-track{
+    height:12px;border-radius:999px;background:#e3e6ec;overflow:hidden;
+    position:relative;
+  }
+  .progress-fill{
+    height:100%;width:0%;border-radius:999px;
+    background:linear-gradient(90deg,#e05a4a,#c0392b);
+    transition:width .3s ease;
+  }
+  .progress-fill.done{background:linear-gradient(90deg,#2fa36b,#0f7b3f)}
+  .progress-fill.failed{background:linear-gradient(90deg,#9aa3af,#6b7280)}
+  /* Hiệu ứng sọc chạy khi đang xử lý */
+  .progress-fill.active{
+    background-image:linear-gradient(
+      45deg,rgba(255,255,255,.22) 25%,transparent 25%,
+      transparent 50%,rgba(255,255,255,.22) 50%,
+      rgba(255,255,255,.22) 75%,transparent 75%,transparent);
+    background-size:24px 24px;
+    animation:stripes .8s linear infinite;
+  }
+  @keyframes stripes{from{background-position:0 0}to{background-position:24px 0}}
+  .progress-note{
+    margin-top:8px;font-size:13px;color:var(--muted);
+    display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;
+  }
+  .progress-eta{font-variant-numeric:tabular-nums}
+  .video{display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap}
+  .video img{width:150px;border-radius:8px;border:1px solid var(--line)}
+  .video .meta{flex:1;min-width:220px}
+  .video .meta h2{font-size:17px;margin:0 0 4px}
+  .video .meta p{margin:0;color:var(--muted);font-size:14px}
+  .badge{
+    display:inline-block;padding:3px 10px;border-radius:999px;font-size:12px;
+    font-weight:600;margin-top:8px;
+  }
+  .badge.sub{background:var(--ok-soft);color:var(--ok)}
+  .badge.whisper{background:var(--warn-soft);color:var(--warn)}
+  .badge.err{background:var(--brand-soft);color:var(--brand)}
+  pre#lyrics{
+    background:#fafbfc;border:1px solid var(--line);border-radius:8px;
+    padding:14px;font-family:inherit;font-size:15px;white-space:pre-wrap;
+    word-wrap:break-word;max-height:420px;overflow:auto;margin:14px 0 0;
+  }
+  .actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
+  /* Nhóm nút: tách rõ "Dịch" và "Việc khác" để khỏi bấm nhầm */
+  .action-group{
+    margin-top:20px;padding-top:16px;border-top:1px dashed var(--line);
+  }
+  .action-group .group-title{
+    font-size:13px;font-weight:700;color:var(--muted);
+    text-transform:uppercase;letter-spacing:.04em;margin:0;
+  }
+  .action-group .actions{margin-top:10px}
+  #group-translate{
+    background:#f5f9ff;border:1px solid #dbe3f8;border-radius:10px;
+    padding:14px 16px;border-top:1px solid #dbe3f8;
+  }
+  #group-translate .group-title{color:var(--blue,#2b5fd9)}
+  /* Khung đổi model */
+  .model-panel{
+    margin-top:14px;padding:16px 18px;border-radius:10px;
+    background:#fffdf5;border:1px solid #f0e3b8;
+  }
+  .model-panel .group-title{color:#8a6d1a}
+  .field-label{
+    display:block;font-size:13px;font-weight:600;color:var(--muted);
+    margin:12px 0 5px;
+  }
+  .select{
+    width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:8px;
+    font-size:14px;font-family:inherit;background:#fff;color:inherit;
+  }
+  .select:focus{outline:2px solid var(--blue,#2b5fd9);outline-offset:-1px}
+  .analysis{
+    background:var(--blue-soft);border:1px solid #dbe3f8;border-radius:8px;
+    padding:16px;white-space:pre-wrap;font-size:15px;margin-top:12px;
+  }
+  .notice{
+    padding:12px 14px;border-radius:8px;font-size:14px;margin-top:12px;
+  }
+  .notice.warn{background:var(--warn-soft);color:var(--warn)}
+  .notice.ok{background:var(--ok-soft);color:var(--ok)}
+  .notice.err{background:var(--brand-soft);color:var(--brand)}
+  .hidden{display:none !important}
+  .sec-title{font-size:16px;font-weight:700;margin:0 0 4px}
+  footer{text-align:center;color:var(--muted);font-size:13px;margin-top:32px}
+  code{background:#eef0f4;padding:1px 6px;border-radius:4px;font-size:13px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <h1>🎵 Trích xuất lời bài hát YouTube</h1>
+    <p class="sub">Dán link video → lấy lời → cho AI đọc và phân tích.</p>
+  </header>
+
+  <!-- BƯỚC 1 -->
+  <div class="card">
+    <label for="url">Bước 1 — Dán link video YouTube vào đây</label>
+    <div class="row">
+      <input type="text" id="url" placeholder="https://www.youtube.com/watch?v=..."
+             autocomplete="off" spellcheck="false">
+      <button class="primary" id="btn-extract">Trích xuất lời</button>
+    </div>
+    <div class="checkline">
+      <input type="checkbox" id="force-whisper">
+      <label for="force-whisper" style="font-weight:400;margin:0;cursor:pointer">
+        Bỏ qua phụ đề, nghe trực tiếp bằng AI (chậm hơn nhưng dùng cho mọi video)
+      </label>
+    </div>
+    <p class="hint" id="hint">
+      Hỗ trợ link dạng <code>youtube.com/watch?v=...</code>, <code>youtu.be/...</code>,
+      <code>youtube.com/shorts/...</code>
+    </p>
+
+    <!-- Thanh tiến độ -->
+    <div class="progress-box hidden" id="progress-box">
+      <div class="progress-head">
+        <span class="progress-label" id="progress-label">Đang xử lý...</span>
+        <span class="progress-pct" id="progress-pct">0%</span>
+      </div>
+      <div class="progress-track">
+        <div class="progress-fill active" id="progress-fill"></div>
+      </div>
+      <div class="progress-note">
+        <span id="progress-note">Bắt đầu...</span>
+        <span class="progress-eta" id="progress-eta"></span>
+      </div>
+    </div>
+
+    <div class="console" id="console"></div>
+  </div>
+
+  <!-- BƯỚC 2 -->
+  <div class="card hidden" id="card-result">
+    <p class="sec-title">Bước 2 — Kết quả</p>
+    <div class="video" id="video-info"></div>
+    <div id="notices"></div>
+    <pre id="lyrics"></pre>
+
+    <!-- Nhóm 1: DỊCH (việc chính) -->
+    <div id="group-translate" class="action-group hidden">
+      <p class="group-title">🌐 Dịch sang tiếng Việt</p>
+      <div class="actions">
+        {% if co_api_key %}
+        <button id="btn-translate-api" class="primary">⚡ Dịch ngay ({{ nha_cung_cap }})</button>
+        {% endif %}
+        <button id="btn-translate-prompt">📝 Tạo đề bài dịch</button>
+        <button id="btn-copy-translate">📋 Copy bản dịch</button>
+      </div>
+    </div>
+
+    <!-- Nhóm 2: CÁC VIỆC KHÁC -->
+    <div class="action-group">
+      <p class="group-title">📝 Việc khác</p>
+      <div class="actions">
+        <button id="btn-toggle-view">📄 Chuyển sang dạng đoạn văn</button>
+        <button id="btn-copy-lyrics">📋 Copy lời bài hát</button>
+        <button id="btn-show-translate" class="hidden">🌐 Dịch bài này sang tiếng Việt</button>
+        <button id="btn-analyze-api" class="hidden">🤖 Phân tích bằng AI</button>
+        <button id="btn-analyze-prompt">📄 Tạo đề bài phân tích</button>
+        <button id="btn-clear">Xoá và làm bài khác</button>
+      </div>
+    </div>
+
+    {% if co_api_key %}
+    <p class="hint" style="margin-top:10px">
+      ⚡ Các nút có dấu sét xử lý ngay trong tool bằng <b id="hint-provider">{{ nha_cung_cap }}</b>
+      — model <code id="hint-model">{{ ten_model }}</code>.
+      <a href="#" id="btn-open-model" style="color:var(--blue,#2b5fd9);font-weight:700">
+        Đổi model / dịch vụ
+      </a>
+    </p>
+
+    <!-- Khung đổi model (ẩn mặc định, mở khi bấm "Đổi model / dịch vụ") -->
+    <div id="panel-model" class="model-panel hidden">
+      <p class="group-title">🔀 Đổi dịch vụ và model</p>
+
+      <label class="field-label" for="sel-provider">1. Chọn dịch vụ</label>
+      <select id="sel-provider" class="select"></select>
+
+      <label class="field-label" for="sel-model">2. Chọn model</label>
+      <select id="sel-model" class="select"></select>
+
+      <label class="field-label" for="inp-model">Hoặc gõ tên model khác</label>
+      <input id="inp-model" class="select" type="text"
+             placeholder="ví dụ: google/gemini-3.7-pro" autocomplete="off">
+
+      <div class="actions" style="margin-top:14px">
+        <button id="btn-load-models">🔄 Tải danh sách model thật</button>
+        <button id="btn-save-model" class="primary">💾 Lưu và dùng model này</button>
+      </div>
+      <div id="model-status" style="margin-top:10px"></div>
+      <p class="hint" style="margin-top:10px">
+        Sau khi bấm <b>Lưu</b>, tool dùng model mới ngay. Lần sau mở lại cũng
+        nhớ lựa chọn này (đã ghi vào file cấu hình).
+      </p>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Kết quả dịch (nằm ngay dưới nhóm Dịch) -->
+  <div class="card hidden" id="card-translate">
+    <p class="sec-title">🌐 Bản dịch tiếng Việt</p>
+    <div id="translate-notice"></div>
+    <pre class="analysis" id="translate-text" style="margin-top:12px"></pre>
+  </div>
+
+  <!-- BƯỚC 3 -->
+  <div class="card hidden" id="card-analysis">
+    <p class="sec-title">Bước 3 — Kết quả phân tích</p>
+    <div id="analysis-notice"></div>
+    <pre class="analysis" id="analysis-text"></pre>
+    <div class="actions">
+      <button id="btn-copy-analysis">📋 Copy kết quả phân tích</button>
+    </div>
+  </div>
+
+  <footer>Tool chạy trên máy của Đại. Dữ liệu video không được gửi đi đâu ngoài YouTube.</footer>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const HAS_API_KEY = {{ 'true' if co_api_key else 'false' }};
+let current = null;   // {title, channel, lyrics}
+
+/* ---------- Thanh tiến độ ---------- */
+/* Trọng số: tải phần tiếng chiếm 15%, nghe và chép lời chiếm 85%.
+   Nhờ vậy thanh chạy liền mạch, không giật về 0 khi đổi giai đoạn. */
+const STAGE_WEIGHT = { download: 15, transcribe: 85 };
+const STAGE_OFFSET = { download: 0, transcribe: 15 };
+
+const pg = {
+  startTime: 0,
+  stage: '',
+  overall: 0,     // % tổng đã đạt
+
+  reset() {
+    this.startTime = Date.now();
+    this.stage = '';
+    this.overall = 0;
+    $('progress-box').classList.remove('hidden');
+    $('progress-fill').classList.remove('done');
+    $('progress-fill').classList.add('active');
+    $('progress-fill').style.width = '0%';
+    $('progress-pct').textContent = '0%';
+    $('progress-label').textContent = 'Đang xử lý...';
+    $('progress-note').textContent = 'Bắt đầu...';
+    $('progress-eta').textContent = '';
+  },
+
+  hide() { $('progress-box').classList.add('hidden'); },
+
+  /** Ước tính thời gian còn lại dựa trên tốc độ đã chạy */
+  etaText(pct) {
+    if (pct <= 1 || pct >= 100) return '';
+    const elapsed = (Date.now() - this.startTime) / 1000;
+    const remain = elapsed * (100 - pct) / pct;
+    if (!isFinite(remain) || remain <= 1) return '';
+    if (remain < 60) return `⏳ còn khoảng ${Math.round(remain)} giây`;
+    const m = Math.floor(remain / 60), s = Math.round(remain % 60);
+    return `⏳ còn khoảng ${m} phút ${s} giây`;
+  },
+
+  update(stage, pct, note) {
+    this.stage = stage;
+    // Quy đổi % của giai đoạn hiện tại sang % tổng
+    const w = STAGE_WEIGHT[stage] ?? 100;
+    const off = STAGE_OFFSET[stage] ?? 0;
+    let overall = off + (pct / 100) * w;
+    // Không cho thanh chạy lùi
+    overall = Math.max(overall, this.overall);
+    this.overall = overall;
+
+    const label = stage === 'download'
+      ? '⬇️ Đang tải phần tiếng của video'
+      : '🎧 Đang nghe và chép lời';
+
+    $('progress-fill').style.width = overall + '%';
+    $('progress-pct').textContent = Math.round(overall) + '%';
+    $('progress-label').textContent = label;
+    $('progress-note').textContent = note || '';
+    $('progress-eta').textContent = this.etaText(overall);
+
+    if (overall >= 100) {
+      $('progress-fill').classList.remove('active');
+      $('progress-fill').classList.add('done');
+      $('progress-eta').textContent = '';
+    }
+  },
+
+  done() {
+    this.overall = 100;
+    $('progress-fill').style.width = '100%';
+    $('progress-fill').classList.remove('active');
+    $('progress-fill').classList.add('done');
+    $('progress-pct').textContent = '100%';
+    $('progress-label').textContent = '✅ Hoàn tất';
+    $('progress-eta').textContent = '';
+    setTimeout(() => this.hide(), 900);
+  },
+
+  /** Khi gặp lỗi: dừng thanh, báo rõ, rồi ẩn đi */
+  fail(message) {
+    $('progress-fill').classList.remove('active');
+    $('progress-fill').classList.add('failed');
+    $('progress-label').textContent = '❌ Không xử lý được';
+    $('progress-note').textContent = message || '';
+    $('progress-eta').textContent = '';
+    setTimeout(() => this.hide(), 2500);
+  }
+};
+
+/* ---------- Trích xuất ---------- */
+$('btn-extract').addEventListener('click', async () => {
+  const url = $('url').value.trim();
+  if (!url) { alert('Đại chưa dán link video.'); return; }
+
+  const force = $('force-whisper').checked ? '1' : '0';
+  $('btn-extract').disabled = true;
+  $('card-result').classList.add('hidden');
+  $('card-analysis').classList.add('hidden');
+  $('console').textContent = '';
+  $('console').textContent += '▶ Bắt đầu xử lý...\n';
+  pg.reset();
+
+  try {
+    const res = await fetch(`/api/extract/stream?url=${encodeURIComponent(url)}&whisper=${force}`);
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buf = '';
+
+    while (true) {
+      const {done, value} = await reader.read();
+      if (done) break;
+      buf += decoder.decode(value, {stream: true});
+      const parts = buf.split('\n\n');
+      buf = parts.pop();
+
+      for (const part of parts) {
+        const line = part.split('\n').find(l => l.startsWith('data: '));
+        if (!line) continue;
+        let msg;
+        try { msg = JSON.parse(line.slice(6)); } catch(e) { continue; }
+
+        if (msg.type === 'log') {
+          $('console').textContent += msg.message + '\n';
+          $('console').scrollTop = $('console').scrollHeight;
+        } else if (msg.type === 'progress') {
+          pg.update(msg.stage, msg.percent, msg.note);
+        } else if (msg.type === 'result') {
+          if (msg.data && msg.data.ok) {
+            pg.done();
+          } else {
+            pg.fail(msg.data ? msg.data.error : 'Lỗi không xác định');
+          }
+          showResult(msg.data);
+        }
+      }
+    }
+  } catch (err) {
+    $('console').textContent += '❌ Lỗi kết nối: ' + err.message + '\n';
+    pg.fail('Mất kết nối tới tool');
+  } finally {
+    $('btn-extract').disabled = false;
+  }
+});
+
+/* Cho phép nhấn Enter trong ô link */
+$('url').addEventListener('keydown', e => {
+  if (e.key === 'Enter') $('btn-extract').click();
+});
+
+/* ---------- Hiển thị kết quả ---------- */
+function showResult(d) {
+  const card = $('card-result');
+  card.classList.remove('hidden');
+  $('notices').innerHTML = '';
+
+  if (!d.ok) {
+    $('video-info').innerHTML = '';
+    $('lyrics').textContent = '';
+    addNotice('err', '❌ ' + (d.error || 'Không xử lý được video này.'));
+    return;
+  }
+
+  // Thông tin video
+  const img = d.thumbnail
+    ? `<img src="${d.thumbnail}" alt="thumbnail">` : '';
+  const badge = d.source === 'subtitle'
+    ? `<span class="badge sub">✅ Lấy từ phụ đề có sẵn${d.language ? ' (' + d.language + ')' : ''}</span>`
+    : `<span class="badge whisper">⚠️ Nhận dạng tự động bằng AI${d.detected_language ? ' (' + d.detected_language + ')' : ''}</span>`;
+  $('video-info').innerHTML = `
+    ${img}
+    <div class="meta">
+      <h2>${esc(d.title || '(không có tiêu đề)')}</h2>
+      <p>${esc(d.channel || '')}</p>
+      <p style="margin-top:2px">
+        <a href="${d.web_url}" target="_blank" rel="noopener">Mở video trên YouTube ↗</a>
+      </p>
+      ${badge}
+    </div>`;
+
+  $('lyrics').textContent = d.lyrics || '';
+  (d.warnings || []).forEach(w => addNotice('warn', '⚠️ ' + w));
+
+  // Nhóm nút DỊCH chỉ hiện khi lời không phải tiếng Việt.
+  // Nếu máy nghe đoán nhầm ngôn ngữ, Đại vẫn có nút dự phòng trong nhóm
+  // "Việc khác" để mở nhóm Dịch bằng tay.
+  const lang = (d.detected_language || d.language || '').toLowerCase();
+  const isVietnamese = lang.startsWith('vi');
+  const groupTranslate = $('group-translate');
+  const btnShowTranslate = $('btn-show-translate');
+  const shouldTranslate = Boolean(d.lyrics && lang && !isVietnamese);
+
+  groupTranslate.classList.toggle('hidden', !shouldTranslate);
+  // Nút dự phòng: hiện khi có lời và nhóm Dịch đang bị ẩn.
+  btnShowTranslate.classList.toggle('hidden', !d.lyrics || shouldTranslate);
+
+  if (shouldTranslate) {
+    const noti = document.createElement('div');
+    noti.className = 'notice warn';
+    noti.innerHTML = `🌐 Lời bài hát này bằng tiếng <b>${lang}</b>. `
+      + `Dùng nhóm nút <b>"Dịch sang tiếng Việt"</b> ở dưới để lấy bản tiếng Việt.`;
+    $('notices').appendChild(noti);
+  } else if (d.lyrics && isVietnamese) {
+    addNotice('ok', '✅ Lời đã là tiếng Việt, không cần dịch. '
+      + 'Nếu vẫn muốn dịch, bấm "🌐 Dịch bài này sang tiếng Việt" bên dưới.');
+  }
+
+  // Nút "Phân tích bằng AI" cũng do máy chủ quyết định, chỉ cần bỏ lớp ẩn mặc định.
+  $('btn-analyze-api').classList.toggle('hidden', !HAS_API_KEY);
+
+  // Đặt lại nút chuyển dạng hiển thị
+  current = {
+    title: d.title || '',
+    channel: d.channel || '',
+    lyrics: d.lyrics || '',
+    lang: lang,
+    paragraph: null,      // sẽ tạo khi bấm lần đầu
+    showingParagraph: false
+  };
+  $('btn-toggle-view').textContent = '📄 Chuyển sang dạng đoạn văn';
+  $('card-translate').classList.add('hidden');
+}
+
+function addNotice(kind, text) {
+  const div = document.createElement('div');
+  div.className = 'notice ' + kind;
+  div.textContent = text;
+  $('notices').appendChild(div);
+}
+
+function esc(s) {
+  return String(s).replace(/[&<>"']/g, c => ({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+  }[c]));
+}
+
+/* ---------- Phân tích ---------- */
+$('btn-analyze-prompt').addEventListener('click', async () => {
+  if (!current?.lyrics) return;
+  const r = await postJSON('/api/analyze', {...current, mode: 'prompt'});
+  if (r.ok) {
+    $('card-analysis').classList.remove('hidden');
+    $('analysis-notice').innerHTML =
+      '<div class="notice ok">✅ Đã tạo đề bài. Đại copy nội dung bên dưới rồi dán vào WorkBuddy/ChatGPT/Claude để nhận phân tích.</div>';
+    $('analysis-text').textContent = r.prompt;
+  } else {
+    alert(r.error || 'Không tạo được đề bài.');
+  }
+});
+
+const btnApi = $('btn-analyze-api');
+if (btnApi) btnApi.addEventListener('click', async () => {
+  if (!current?.lyrics) return;
+  $('card-analysis').classList.remove('hidden');
+  $('analysis-notice').innerHTML = '<div class="notice ok">⏳ Đang gọi AI phân tích, chờ một chút...</div>';
+  $('analysis-text').textContent = '';
+  const r = await postJSON('/api/analyze', {...current, mode: 'api'});
+  if (r.ok) {
+    $('analysis-notice').innerHTML = '<div class="notice ok">✅ Phân tích xong.</div>';
+    $('analysis-text').textContent = r.text;
+  } else {
+    $('analysis-notice').innerHTML = '<div class="notice err">❌ ' + esc(r.error) + '</div>';
+  }
+});
+
+async function postJSON(url, body) {
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify(body)
+  });
+  return res.json();
+}
+
+/* ---------- Nút phụ ---------- */
+/* Chuyển đổi giữa "có mốc thời gian" và "đoạn văn liền mạch" */
+$('btn-toggle-view').addEventListener('click', async () => {
+  if (!current?.lyrics) return;
+  const btn = $('btn-toggle-view');
+
+  if (current.showingParagraph) {
+    $('lyrics').textContent = current.lyrics;
+    btn.textContent = '📄 Chuyển sang dạng đoạn văn';
+    current.showingParagraph = false;
+    return;
+  }
+
+  // Tạo đoạn văn lần đầu, các lần sau dùng lại bản đã tạo
+  if (!current.paragraph) {
+    btn.disabled = true;
+    const r = await postJSON('/api/paragraph', {lyrics: current.lyrics});
+    btn.disabled = false;
+    if (!r.ok) { alert(r.error || 'Không chuyển được.'); return; }
+    current.paragraph = r.text;
+  }
+  $('lyrics').textContent = current.paragraph;
+  btn.textContent = '🕐 Quay lại dạng có mốc thời gian';
+  current.showingParagraph = true;
+});
+
+/* Sinh đề bài dịch sang tiếng Việt (không cần khoá API) */
+async function requestTranslate() {
+  if (!current?.lyrics) return;
+  showTranslateCard();
+
+  const r = await postJSON('/api/translate', {
+    lyrics: current.lyrics, source_lang: current.lang,
+    target: 'tiếng Việt', mode: 'prompt'
+  });
+  if (!r.ok) { alert(r.error || 'Không tạo được đề bài dịch.'); return; }
+
+  $('translate-notice').innerHTML =
+    '<div class="notice ok">✅ Đã tạo đề bài dịch. Đại copy nội dung bên dưới rồi dán vào '
+    + 'WorkBuddy/ChatGPT để nhận bản dịch tiếng Việt.</div>';
+  $('translate-text').textContent = r.prompt;
+}
+
+/** Hiện khung kết quả dịch và cuộn tới đó */
+function showTranslateCard() {
+  $('card-translate').classList.remove('hidden');
+  $('card-translate').scrollIntoView({behavior: 'smooth', block: 'nearest'});
+}
+
+/* Dịch ngay bằng API (cần khoá) */
+$('btn-translate-api').addEventListener('click', async () => {
+  if (!current?.lyrics) return;
+  const btn = $('btn-translate-api');
+  btn.disabled = true;
+  const oldLabel = btn.textContent;
+  btn.textContent = '⏳ Đang dịch...';
+
+  // QUAN TRỌNG: phải mở khung kết quả dịch ra TRƯỚC khi dịch,
+  // nếu không bản dịch sẽ được ghi vào khung đang bị ẩn và Đại không thấy gì.
+  showTranslateCard();
+  $('translate-notice').innerHTML =
+    '<div class="notice ok">⏳ Đang dịch sang tiếng Việt, chờ một chút...</div>';
+  $('translate-text').textContent = '';
+
+  const r = await postJSON('/api/translate', {
+    lyrics: current.lyrics, source_lang: current.lang,
+    target: 'tiếng Việt', mode: 'api'
+  });
+  btn.disabled = false;
+  btn.textContent = oldLabel;
+
+  if (r.ok) {
+    $('translate-notice').innerHTML =
+      '<div class="notice ok">✅ Bản dịch tiếng Việt đã xong. Bấm '
+      + '<b>📋 Copy bản dịch</b> để sử dụng.</div>';
+    $('translate-text').textContent = r.text;
+  } else {
+    $('translate-notice').innerHTML =
+      '<div class="notice err">❌ ' + esc(r.error) + '</div>';
+    // Lỗi do thiếu khoá -> gợi ý dùng cách miễn phí
+    if (/khoá API/i.test(r.error || '')) {
+      $('translate-notice').innerHTML +=
+        '<div class="notice warn">💡 Đại có thể dùng nút "📝 Tạo đề bài dịch" để lấy bản dịch miễn phí.</div>';
+    }
+  }
+});
+
+$('btn-translate-prompt').addEventListener('click', () => {
+  if (!current?.lyrics) return;
+  requestTranslate();
+});
+
+/* Nút dự phòng: mở nhóm Dịch bằng tay (khi máy nghe đoán nhầm ngôn ngữ) */
+$('btn-show-translate').addEventListener('click', () => {
+  if (!current?.lyrics) return;
+  const groupTranslate = $('group-translate');
+  groupTranslate.classList.remove('hidden');
+  $('btn-show-translate').classList.add('hidden');
+  groupTranslate.scrollIntoView({behavior: 'smooth', block: 'nearest'});
+});
+
+$('btn-copy-lyrics').addEventListener('click', () =>
+  copyText($('lyrics').textContent, $('btn-copy-lyrics')));
+$('btn-copy-analysis').addEventListener('click', () =>
+  copyText($('analysis-text').textContent, $('btn-copy-analysis')));
+$('btn-copy-translate').addEventListener('click', () =>
+  copyText($('translate-text').textContent, $('btn-copy-translate')));
+
+async function copyText(text, btn) {
+  if (!text) return;
+  try {
+    await navigator.clipboard.writeText(text);
+  } catch(e) {
+    const ta = document.createElement('textarea');
+    ta.value = text; document.body.appendChild(ta); ta.select();
+    document.execCommand('copy'); ta.remove();
+  }
+  const old = btn.textContent;
+  btn.textContent = '✅ Đã copy';
+  setTimeout(() => btn.textContent = old, 1500);
+}
+
+$('btn-clear').addEventListener('click', () => {
+  $('url').value = '';
+  $('console').textContent = '';
+  $('card-result').classList.add('hidden');
+  $('card-analysis').classList.add('hidden');
+  $('card-translate').classList.add('hidden');
+  $('group-translate').classList.add('hidden');
+  $('btn-show-translate').classList.add('hidden');
+  $('translate-text').textContent = '';
+  $('translate-notice').innerHTML = '';
+  pg.hide();
+  current = null;
+  $('url').focus();
+});
+
+/* ---------- Đổi dịch vụ và model ---------- */
+const PROVIDER_NAMES = {nous: 'Nous Portal', gemini: 'Google Gemini', openai: 'OpenAI'};
+
+function fillSelect(sel, items, selected) {
+  sel.innerHTML = '';
+  items.forEach(v => {
+    const o = document.createElement('option');
+    o.value = v; o.textContent = v;
+    if (v === selected) o.selected = true;
+    sel.appendChild(o);
+  });
+}
+
+/* Nạp danh sách model gợi ý sẵn cho dịch vụ đang chọn */
+async function loadPresetModels(provider, keepModel) {
+  const r = await fetch('/api/models' + (provider ? '?provider=' + provider : ''));
+  const d = await r.json();
+  const selM = $('sel-model');
+  fillSelect(selM, d.models || [], keepModel || d.current);
+  if (!keepModel) $('inp-model').value = '';
+}
+
+/* Mở/đóng khung đổi model */
+$('btn-open-model').addEventListener('click', async (e) => {
+  e.preventDefault();
+  const p = $('panel-model');
+  p.classList.toggle('hidden');
+  if (!p.classList.contains('hidden')) {
+    const selP = $('sel-provider');
+    if (!selP.options.length) {
+      fillSelect(selP, Object.keys(PROVIDER_NAMES).map(k => k), null);
+      // Đánh dấu dịch vụ đang dùng
+      const cur = $('hint-provider').textContent.trim();
+      const curKey = Object.keys(PROVIDER_NAMES)
+        .find(k => PROVIDER_NAMES[k] === cur);
+      if (curKey) selP.value = curKey;
+    }
+    await loadPresetModels(selP.value, $('hint-model').textContent.trim());
+    p.scrollIntoView({behavior: 'smooth', block: 'nearest'});
+  }
+});
+
+/* Đổi dịch vụ -> nạp lại danh sách model của dịch vụ đó */
+$('sel-provider').addEventListener('change', () => {
+  loadPresetModels($('sel-provider').value, null);
+});
+
+/* Chọn model trong ô chọn -> điền luôn vào ô gõ tay */
+$('sel-model').addEventListener('change', () => {
+  $('inp-model').value = $('sel-model').value;
+});
+
+/* Tải danh sách model THẬT từ dịch vụ */
+$('btn-load-models').addEventListener('click', async () => {
+  const btn = $('btn-load-models');
+  const provider = $('sel-provider').value;
+  btn.disabled = true;
+  btn.textContent = '⏳ Đang tải...';
+  $('model-status').innerHTML =
+    '<div class="notice ok">⏳ Đang hỏi ' + (PROVIDER_NAMES[provider] || provider)
+    + ' xem có những model nào...</div>';
+
+  const r = await fetch('/api/models/live?provider=' + provider);
+  const d = await r.json();
+  btn.disabled = false;
+  btn.textContent = '🔄 Tải danh sách model thật';
+
+  if (d.ok && d.models?.length) {
+    fillSelect($('sel-model'), d.models, d.current);
+    $('model-status').innerHTML = '<div class="notice ok">✅ Lấy được <b>'
+      + d.count + '</b> model từ ' + (PROVIDER_NAMES[provider] || provider)
+      + '. Chọn ở ô trên rồi bấm Lưu.</div>';
+  } else {
+    $('model-status').innerHTML = '<div class="notice err">❌ '
+      + esc(d.error || 'Không lấy được danh sách.') + '</div>';
+  }
+});
+
+/* Lưu model đã chọn */
+$('btn-save-model').addEventListener('click', async () => {
+  const model = ($('inp-model').value || $('sel-model').value || '').trim();
+  if (!model) {
+    $('model-status').innerHTML =
+      '<div class="notice err">❌ Đại chưa chọn model nào.</div>';
+    return;
+  }
+  const provider = $('sel-provider').value;
+  const btn = $('btn-save-model');
+  btn.disabled = true;
+  btn.textContent = '⏳ Đang lưu...';
+
+  const r = await postJSON('/api/model', {model: model, provider: provider});
+  btn.disabled = false;
+  btn.textContent = '💾 Lưu và dùng model này';
+
+  if (r.ok) {
+    $('hint-provider').textContent = PROVIDER_NAMES[provider] || provider;
+    $('hint-model').textContent = model;
+    $('model-status').innerHTML = '<div class="notice ok">✅ Đã lưu. Tool dùng '
+      + '<b>' + esc(model) + '</b> từ bây giờ.</div>';
+  } else {
+    $('model-status').innerHTML = '<div class="notice err">❌ '
+      + esc(r.error || 'Không lưu được.') + '</div>';
+  }
+});
+</script>
+</body>
+</html>
