@@ -1,4 +1,4 @@
-# HƯỚNG DẪN SỬ DỤNG — Tool trích xuất lời bài hát YouTube
+# HƯỚNG DẪN SỬ DỤNG — Tool trích xuất lời bài hát
 
 > Dành cho người không biết lập trình. Làm theo đúng thứ tự từng bước.
 
@@ -6,10 +6,23 @@
 
 ## 1. Tool này làm được gì?
 
-Đại dán một link YouTube vào → tool tự lấy lời bài hát → Đại bấm nút để **dịch sang tiếng Việt** hoặc cho AI phân tích.
+Đại đưa vào **một trong hai nguồn** → tool tự lấy lời bài hát → Đại bấm nút để **dịch sang tiếng Việt** hoặc cho AI phân tích.
+
+| Nguồn | Cách đưa vào |
+|---|---|
+| 🔗 **Link YouTube** | Dán link vào ô (tab "🔗 Link YouTube") |
+| 💻 **Video/audio có sẵn trong máy** | Dán đường dẫn file, hoặc bấm "📁 Hoặc chọn file từ máy" (tab "💻 Video trong máy") |
 
 ```
-🔗 Link YouTube
+🔗 Link YouTube  ────┐
+                     ├──→ Lấy lời ──→ 📝 Lời bài hát ──→ 🌐 Dịch / 🤖 Phân tích
+💻 File trong máy ───┘
+```
+
+**Đường đi của từng nguồn:**
+
+```
+🔗 LINK YOUTUBE
       ↓
 ┌─────────────────────────────┐
 │ 1. Video có phụ đề sẵn?     │──✅ Có──→ Lấy luôn (nhanh, chính xác)
@@ -21,9 +34,24 @@
 │ 2. Tải phần tiếng của video │
 │ 3. AI nghe và chép lại lời  │  ← chậm hơn, có thể sai vài chữ
 └─────────────────────────────┘
+
+💻 FILE TRONG MÁY
       ↓
-   📝 Lời bài hát
+┌─────────────────────────────┐
+│ Là file phụ đề (.srt/.vtt)? │──✅ Phải──→ Đọc thẳng (không cần nghe)
+└─────────────────────────────┘
+      │
+      ❌ Không phải
       ↓
+┌─────────────────────────────┐
+│ Đọc thẳng file gốc rồi      │  ← KHÔNG copy file, KHÔNG tải gì về,
+│ 3. AI nghe và chép lại lời  │     không cần cài thêm gì
+└─────────────────────────────┘
+```
+
+Cả hai nguồn đều dẫn tới cùng các nút:
+
+```
 ┌──────────────────────────────────────────────────┐
 │  🌐 DỊCH SANG TIẾNG VIỆT   ← việc chính ⭐       │
 │     ⚡ Dịch ngay bằng API                        │
@@ -51,32 +79,48 @@
 
 ---
 
-## 2. Cách chạy tool (2 bước — cách nhanh nhất)
+## 2. Cách chạy tool (1 bước — cách nhanh nhất)
 
-### Bước 1 — Mở thư mục tool
-
-Mở **File Explorer** (biểu tượng thư mục vàng trên thanh dưới màn hình), dán đường dẫn này vào thanh địa chỉ rồi nhấn **Enter**:
+### Nhấp đúp vào file `CHAY-TOOL.vbs` ở **thư mục gốc dự án**
 
 ```
-D:\Workbuddy AI\2026-10-05-21-21-00\yt_lyrics
+D:\Buddy Work AI\2026-10-06-08-41-26\youtube-lyrics-tool\CHAY-TOOL.vbs
 ```
-
-### Bước 2 — Nhấp đúp vào file `BAT-TOOL.bat`
 
 Tool sẽ tự bật lên và tự mở trình duyệt cho Đại. Xong.
 
-> 🔄 **Muốn tắt tool?** Đóng cửa sổ đen vừa hiện ra.
+> 🕶️ **Không còn cửa sổ đen nào hiện ra.** Tool chạy ngầm ở dưới, Đại chỉ thấy trình duyệt mở ra.
+
+> ⏻ **Muốn tắt tool?** Bấm nút **"⏻ Tắt tool"** ở **cuối trang web**.
+> Vì tool chạy ngầm nên không có cửa sổ nào để đóng — nút đó mới là chỗ tắt.
+
+> 🖱️ File `CHAY-TOOL.bat` (nhấp đúp) cũng chạy được như cũ, nhưng nó sẽ **nháy một cửa sổ đen rất nhanh** rồi tắt.
+> Muốn hoàn toàn không thấy gì thì dùng file `.vbs`.
+
+<details>
+<summary><b>Cách khác — chạy trực tiếp trong thư mục <code>yt_lyrics</code></b></summary>
+
+Mở thư mục:
+
+```
+D:\Buddy Work AI\2026-10-06-08-41-26\youtube-lyrics-tool\yt_lyrics
+```
+
+Rồi nhấp đúp vào file `BAT-TOOL.bat`. **Cách này CÓ hiện cửa sổ đen** — dùng khi
+Đại muốn nhìn thấy thông báo, ví dụ khi tool báo lỗi mà không rõ vì sao.
+
+</details>
 
 ---
 
 <details>
-<summary><b>Cách 2 — Chạy bằng dòng lệnh (nếu file .bat không chạy được)</b></summary>
+<summary><b>Cách 2 — Chạy bằng dòng lệnh (nếu file .vbs không chạy được)</b></summary>
 
 1. Nhấn phím **Windows**, gõ `cmd`, nhấn **Enter**.
 2. Copy và dán nguyên dòng sau rồi nhấn **Enter**:
 
 ```
-cd /d "D:\Workbuddy AI\2026-10-05-21-21-00\yt_lyrics" && "C:\Users\nguye\.workbuddy-ai\binaries\python\envs\default\Scripts\python.exe" app.py
+cd /d "D:\Buddy Work AI\2026-10-06-08-41-26\youtube-lyrics-tool\yt_lyrics" && "C:\Users\nguye\.workbuddy-ai\binaries\python\envs\default\Scripts\python.exe" app.py
 ```
 
 > Đại **không cần hiểu** đoạn lệnh này. Nó chỉ có nhiệm vụ: đi tới thư mục tool và bật tool lên.
@@ -87,13 +131,58 @@ cd /d "D:\Workbuddy AI\2026-10-05-21-21-00\yt_lyrics" && "C:\Users\nguye\.workbu
 
 ---
 
+<details>
+<summary><b>Nếu bấm mà không thấy gì xảy ra (tool chạy ngầm nên im lặng)</b></summary>
+
+Vì tool không hiện cửa sổ, nó cũng **không kêu ca** khi có trục trặc. Kiểm tra theo thứ tự:
+
+1. **Đợi khoảng 5 giây** — lần đầu mở hơi chậm, trình duyệt sẽ tự mở.
+2. **Không thấy trình duyệt mở?** Tự mở Chrome và gõ `http://127.0.0.1:5000`.
+3. **Vẫn không được?** Mở file nhật ký `yt_lyrics\tool.log` bằng Notepad — mọi thông báo của tool được ghi vào đó.
+4. **Vẫn bí?** Nhấp đúp `yt_lyrics\BAT-TOOL.bat` — bản này có cửa sổ đen, sẽ hiện thẳng lỗi ra cho Đại thấy.
+
+</details>
+
+---
+
 ## 3. Cách dùng trên giao diện
 
-### Bước 1 — Dán link
-Dán link video YouTube vào ô lớn, ví dụ:
+### Bước 1 — Chọn nguồn lấy lời
+
+Ở Bước 1 có **2 tab**, bấm để chuyển qua lại:
+
+| Tab | Dùng khi nào |
+|---|---|
+| 🔗 **Link YouTube** | Video nằm trên YouTube |
+| 💻 **Video trong máy** | Video/audio đã có sẵn trong máy Đại |
+
+#### Tab 🔗 Link YouTube
+Dán link video vào ô lớn, ví dụ:
 - `https://www.youtube.com/watch?v=xxxxxxxxxxx`
 - `https://youtu.be/xxxxxxxxxxx`
 - `https://www.youtube.com/shorts/xxxxxxxxxxx`
+
+#### Tab 💻 Video trong máy
+Có **2 cách**, dùng cách nào cũng được:
+
+**Cách A — Dán đường dẫn (nhanh hơn, khuyên dùng):**
+1. Mở thư mục chứa file bằng Windows Explorer.
+2. Giữ phím **Shift** + **bấm chuột phải** vào file → chọn **"Copy as path"**.
+3. Dán vào ô đường dẫn trong tool (dán cả dấu ngoặc kép cũng được, tool tự bỏ).
+
+> Cách này tool **đọc thẳng file gốc**: không sao chép, không tốn thêm dung lượng, file 2–3 GB vẫn chạy ngay.
+
+**Cách B — Bấm nút 📁 Hoặc chọn file từ máy:**
+1. Bấm nút → chọn file trong hộp thoại.
+2. Tool hiện tên file và dung lượng → bấm **"Trích xuất lời"**.
+
+> Cách này tool phải **sao chép file vào thư mục tạm** trước khi nghe (vì trình duyệt không cho biết đường dẫn thật). File tạm **tự xoá sau khi nghe xong**. File trên 500 MB nên dùng Cách A cho nhanh.
+
+**File nhận được:** video (`mp4`, `mkv`, `webm`, `mov`, `avi`, `m4v`, `ts`…), file tiếng (`mp3`, `m4a`, `wav`, `flac`, `ogg`, `opus`, `aac`…), và **file phụ đề** (`srt`, `vtt`, `txt`).
+
+> 📌 Chọn file phụ đề thì tool **đọc luôn**, không cần nghe — nhanh và chính xác nhất.
+
+> 💡 Bấm **✕ Bỏ chọn** ở ô tên file nếu muốn quay lại dùng cách dán đường dẫn.
 
 ### Bước 2 — Bấm nút **"Trích xuất lời"**
 
@@ -113,18 +202,23 @@ Ngay sau khi bấm, một **thanh tiến độ** sẽ hiện ra và tự chạy:
 | `⏳ còn khoảng 8 giây` | Ước tính thời gian còn lại |
 | 🟢 Thanh xanh | Đã xong bước đó |
 
-Tool chạy qua **2 bước**, thanh tiến độ chạy liền mạch:
+Thanh tiến độ chạy liền mạch, chia % theo **đúng nguồn Đại đang dùng**:
 
-| Bước | Chiếm | Nội dung |
+| Nguồn | Các bước | Chiếm |
 |---|---|---|
-| ⬇️ Tải phần tiếng | 0% → 15% | Tải audio của video về máy |
-| 🎧 Nghe và chép lời | 15% → 100% | AI nghe và viết ra lời |
+| 🔗 Link YouTube | ⬇️ Tải phần tiếng | 0% → 15% |
+| | 🎧 Nghe và chép lời | 15% → 100% |
+| 💻 Dán đường dẫn | 📂 Đọc file trong máy | 0% → 3% |
+| | 🎧 Nghe và chép lời | 3% → 100% |
+| 💻 Chọn file từ máy | ⬆️ Gửi file lên tool | 0% → 10% |
+| | 📂 Đọc file trong máy | 10% → 13% |
+| | 🎧 Nghe và chép lời | 13% → 100% |
 
-> 💡 Bước 2 lâu hơn nhiều. Video 30 phút mất vài phút. Cứ để thanh chạy, **đừng bấm lại nút** — sẽ chạy lại từ đầu.
+> 💡 Bước nghe lâu hơn nhiều. Video 30 phút mất vài phút. Cứ để thanh chạy, **đừng bấm lại nút** — sẽ chạy lại từ đầu.
 
 Khi xong, thanh chuyển xanh và hiện `✅ Hoàn tất`, rồi tự ẩn đi để nhường chỗ cho kết quả.
 
-**Nếu muốn bỏ qua phụ đề, nghe trực tiếp bằng AI:**
+**Nếu muốn bỏ qua phụ đề, nghe trực tiếp bằng AI** (chỉ có ở tab Link YouTube):
 ✅ Tích vào ô *"Bỏ qua phụ đề, nghe trực tiếp bằng AI"* trước khi bấm nút.
 
 ### Bước 3 — Các nút trên khung kết quả (chia làm 2 nhóm)
@@ -223,14 +317,29 @@ Nút đó **phân tích** bài hát (nội dung, cảm xúc, thông điệp) —
 
 ---
 
-## 5. File audio tạm — có bị để lại không?
+## 5. File tạm — có bị để lại không?
 
-**Không.** File audio tải về chỉ nằm trong thư mục tạm của Windows và **tự xoá ngay khi nghe xong**, dù thành công hay gặp lỗi.
+**Không.** Tool tự xoá sạch, dù thành công hay gặp lỗi.
 
-| Thời điểm | File audio ở đâu |
+**a) Khi lấy từ link YouTube:** file tiếng tải về chỉ nằm trong thư mục tạm và tự xoá ngay khi nghe xong.
+
+| Thời điểm | File ở đâu |
 |---|---|
 | Đang nghe | `C:\Users\nguye\AppData\Local\Temp\ytlyrics_xxxx\audio.m4a` |
 | Nghe xong | 🗑️ Đã xoá cùng cả thư mục `ytlyrics_xxxx` |
+
+**b) Khi bấm "📁 Chọn file từ máy":** file Đại chọn được sao chép tạm vào thư mục `ytlyrics_up_xxxx`, rồi **tự xoá ngay khi nghe xong**.
+
+| Thời điểm | File ở đâu |
+|---|---|
+| Đang nghe | `C:\Users\nguye\AppData\Local\Temp\ytlyrics_up_xxxx\bai-hat.mp4` |
+| Nghe xong | 🗑️ Đã xoá cùng cả thư mục `ytlyrics_up_xxxx` |
+
+> ⚠️ **File gốc của Đại KHÔNG bị đụng tới** — tool chỉ đọc. Chỉ bản sao tạm mới bị xoá.
+
+**c) Khi dán đường dẫn:** không có file tạm nào cả — tool đọc thẳng file gốc, **không xoá gì**.
+
+> 🧹 Nếu lần trước Đại chọn file rồi đóng tab mà chưa bấm "Trích xuất lời", bản sao tạm đó sẽ nằm lại tới lần mở tool sau — tool **tự dọn khi khởi động**.
 
 Đã kiểm tra thực tế: sau nhiều lần chạy, thư mục tạm **không còn tàn dư nào**. Đại không cần dọn tay.
 
@@ -264,47 +373,47 @@ Gắn khoá API thì tool **tự làm ngay trong trang**, không phải copy đi
 | ⚡ **Phân tích tự động** | AI đọc lời và trả về 8 mục phân tích ngay trên trang |
 | ⚡ **Dịch ngay sang tiếng Việt** | AI dịch lời ngoại ngữ thành tiếng Việt, đã chia đoạn, copy dùng luôn |
 
-### Cách gắn — làm 4 bước
+### Cách gắn — làm 3 bước
 
-**Bước 1️⃣** — Mở thư mục `D:\Workbuddy AI\2026-10-05-21-21-00\` bằng File Explorer.
-
-Trong đó có sẵn file mẫu tên **`.env.MAU`**. Đây là bản mẫu Trợ lý đã chuẩn bị, có ghi chú hướng dẫn ngay bên trong.
-
-**Bước 2️⃣** — Bấm chuột phải vào `.env.MAU` → **Copy**, rồi **Paste** ngay tại chỗ đó (Ctrl+V). Sẽ có file mới tên `.env.MAU - Copy`.
-
-Bấm chuột phải vào file mới → **Rename** → đổi tên thành:
+**Bước 1️⃣** — Mở thư mục gốc dự án:
 
 ```
-.env
+D:\Buddy Work AI\2026-10-06-08-41-26\youtube-lyrics-tool
 ```
 
-> ⚠️ Tên chỉ có đúng 4 ký tự: dấu chấm, chữ `e`, chữ `n`, chữ `v`. **Không có `.txt`** ở cuối. Nếu Windows giấu phần đuôi file, tên trong ô Rename cứ gõ đúng `.env` là được.
+**Bước 2️⃣** — Nhấp đúp vào file **`MO-FILE-ENV.bat`** → Notepad tự mở đúng file `.env`.
 
-**Bước 3️⃣** — Mở file `.env` bằng **Notepad** (chuột phải → Open with → Notepad). Đại sẽ thấy **2 dòng quan trọng**:
+> ✅ **File `.env` đã được Trợ lý tạo sẵn** và đã đặt `AI_PROVIDER=nous` cho Đại rồi.
+> Đại **không cần** tự copy hay đổi tên file như hướng dẫn cũ nữa.
+> (Nếu muốn mở bằng tay: file `.env` nằm ngay trong thư mục gốc dự án ở trên — **không** nằm trong `yt_lyrics`.)
+
+**Bước 3️⃣** — Trong Notepad, tìm dòng **`OPENAI_API_KEY`**. Đại sẽ thấy:
 
 ```
-AI_PROVIDER=openai
+AI_PROVIDER=nous
 
-OPENAI_API_KEY="dan_khoa_cua_dai_vao_day"
+OPENAI_API_KEY="dan_khoa_nous_cua_dai_vao_day"
 ```
 
-**3a. Chọn dịch vụ AI** — sửa dòng `AI_PROVIDER=` thành một trong ba:
+Xoá đoạn chữ `dan_khoa_nous_cua_dai_vao_day`, rồi dán **khoá Nous Portal thật** của Đại vào giữa hai dấu ngoặc kép. Xong bấm **Ctrl+S**.
+
+> 🔑 Khoá Nous Portal bắt đầu bằng `sk-nous-`. Lấy ở trang `portal.nousresearch.com`.
+> 🛡️ **Đối xử như mật khẩu ngân hàng:** không chụp ảnh gửi ai, không đăng lên mạng, không đẩy lên GitHub. File `.env` đã được chặn sẵn khỏi GitHub.
+
+> 💡 **Muốn đổi sang dịch vụ AI khác?** Sửa dòng `AI_PROVIDER=` thành một trong ba:
 
 | Ghi vào | Dùng dịch vụ | Model tự động |
 |---|---|---|
-| `AI_PROVIDER=openai` | OpenAI chính chủ *(mặc định)* | `gpt-4o-mini` |
-| `AI_PROVIDER=gemini` | **Google Gemini** | `gemini-2.5-flash` |
-| `AI_PROVIDER=nous` | **Nous Portal** | `google/gemini-3.7-flash` |
-
-**3b. Dán khoá API** — xoá đoạn `dan_khoa_cua_dai_vao_day`, dán **khoá thật** của Đại vào giữa hai dấu ngoặc kép. Xong bấm **Ctrl+S**.
+| `AI_PROVIDER=nous` | **Nous Portal** *(đang đặt sẵn cho Đại)* | `google/gemini-3.7-flash` |
+| `AI_PROVIDER=gemini` | Google Gemini | `gemini-2.5-flash` |
+| `AI_PROVIDER=openai` | OpenAI chính chủ | `gpt-4o-mini` |
 
 > 🔑 **Khoá API là gì?** Dãy ký tự dài giống mật khẩu, do dịch vụ AI cấp cho Đại. Đại lấy ở trang quản lý tài khoản của dịch vụ mình dùng (Nous Portal / Google AI Studio / OpenAI Platform).
 > ✅ **Khoá của dịch vụ nào thì phải khớp `AI_PROVIDER` của dịch vụ đó.** Dùng khoá Gemini mà lại để `AI_PROVIDER=openai` thì sẽ báo lỗi 401.
-> 🛡️ **Đối xử như mật khẩu ngân hàng:** không chụp ảnh gửi ai, không đăng lên mạng, không đẩy lên GitHub. File `.env` đã được chặn sẵn khỏi GitHub.
 
 **Bước 4️⃣** — Tắt tool rồi bật lại:
 - Nếu đang chạy: bấm vào cửa sổ đen của tool, nhấn **Ctrl + C**, rồi đóng cửa sổ.
-- Bấm đúp vào **`BAT-TOOL.bat`** để mở lại.
+- Nhấp đúp vào **`CHAY-TOOL.bat`** (nằm ở thư mục gốc dự án) để mở lại.
 
 Xong. Trang web sẽ hiện **nút ⚡** kèm tên dịch vụ, ví dụ *"⚡ Dịch ngay (Google Gemini)"*. Ngay dưới đó cũng ghi rõ đang dùng model nào.
 
@@ -401,6 +510,47 @@ Nếu không rõ dịch vụ mình dùng có theo chuẩn không — cứ hỏi 
 
 ## 8. Câu hỏi thường gặp
 
+**Cửa sổ đen đâu rồi? Trước đây mở tool là có mà.**
+→ Đã **bỏ hẳn cửa sổ đen** theo yêu cầu. Tool giờ chạy ngầm, Đại chỉ thấy trình duyệt mở ra.
+→ Đổi lại: muốn tắt tool thì bấm nút **⏻ Tắt tool** ở cuối trang web (xem câu dưới).
+→ Nếu vẫn muốn có cửa sổ đen (để nhìn thấy thông báo khi lỗi), nhấp đúp `yt_lyrics\BAT-TOOL.bat`.
+
+**Tắt tool bằng cách nào?**
+→ Bấm nút **⏻ Tắt tool** ở **cuối trang web**, rồi xác nhận. Trang sẽ báo "✅ Đã tắt tool" — lúc đó Đại đóng tab được.
+→ Nếu đang mở tool bằng bản có cửa sổ đen thì vẫn tắt được bằng cách đóng cửa sổ đó như cũ.
+
+**Bấm `CHAY-TOOL.vbs` mà không thấy gì xảy ra?**
+→ Tool chạy ngầm nên **im lặng là bình thường**. Đợi khoảng 5 giây, trình duyệt sẽ tự mở.
+→ Không thấy trình duyệt mở? Tự mở Chrome, gõ `http://127.0.0.1:5000`.
+→ Vẫn không được? Mở `yt_lyrics\tool.log` bằng Notepad để xem tool báo gì, hoặc chạy `yt_lyrics\BAT-TOOL.bat` để thấy lỗi trực tiếp.
+
+**Bấm `CHAY-TOOL.vbs` hai lần thì có mở 2 tool không?**
+→ **Không.** Lần thứ hai tool phát hiện đã chạy sẵn nên chỉ mở thêm tab trình duyệt, không mở trùng.
+
+**Nút "Tắt tool" có làm mất dữ liệu không?**
+→ Không. Nút đó chỉ **tắt tool đang chạy ngầm**, giống như đóng cửa sổ đen trước đây. Nhưng lời bài hát đang xem trong tab sẽ mất nếu chưa copy — nên **copy trước khi tắt**.
+
+**Lấy lời từ video trong máy có cần cài thêm gì không?**
+→ **Không.** Tool đọc trực tiếp file bằng thư viện đã có sẵn, không cần cài ffmpeg hay phần mềm nào khác.
+
+**Dán đường dẫn file mà tool báo "Không tìm thấy file"?**
+→ Kiểm tra 3 điều:
+> 1. **Đường dẫn có bị cắt không?** Đường dẫn phải có cả phần đuôi file, ví dụ `.mp4`. Nếu copy từ Explorer thì dùng **Shift + chuột phải → Copy as path** cho chắc.
+> 2. **File có bị đổi tên/di chuyển không?** Dán lại đường dẫn mới.
+> 3. **Có dán nhầm thư mục không?** Tool cần đường dẫn tới **file**, không phải thư mục.
+
+**Tool báo "File này không có phần tiếng"?**
+→ File đó chỉ có hình, không có tiếng (hoặc tiếng bị lỗi). Không thể lấy lời từ file không có tiếng.
+
+**Tool báo "Không mở được file này"?**
+→ File có thể bị **hỏng, đang tải dở**, hoặc là định dạng lạ. Thử mở file bằng trình xem video — nếu máy cũng không mở được thì file hỏng.
+
+**Nên dùng "dán đường dẫn" hay "chọn file từ máy"?**
+→ **Dán đường dẫn nhanh hơn và sạch hơn** (tool đọc thẳng, không sao chép). Chỉ dùng "chọn file" khi Đại ngại lấy đường dẫn.
+
+**Chọn file phụ đề (.srt) thì sao?**
+→ Tool **đọc thẳng**, không cần nghe — nhanh nhất và chính xác nhất. Nhưng nếu phụ đề đó là tiếng nước ngoài, Đại vẫn cần bấm dịch như thường.
+
 **Lời bài hát bị sai vài chữ?**
 → Video đó không có phụ đề nên AI phải tự nghe. Tên riêng, từ lạ dễ sai. Nếu tìm được bản có phụ đề chính thức thì kết quả sẽ chuẩn hơn.
 
@@ -456,6 +606,8 @@ Nếu không rõ dịch vụ mình dùng có theo chuẩn không — cứ hỏi 
 |---|---|---|
 | Sơn Tùng M-TP — *Hãy trao cho anh* | Phụ đề chính thức | ✅ 2.743 ký tự, chính xác từng chữ |
 | *Me at the zoo* (không có phụ đề) | AI tự nghe | ✅ Nhận đúng tiếng Anh (99%), sai 1 chữ ("trunks" → "hunts") |
+| File video mp4 trong máy (có hình + tiếng) | AI nghe thẳng từ file | ✅ Nhận đúng câu nói, tiếng Anh (94%), đúng mốc thời gian |
+| File phụ đề .srt trong máy | Đọc thẳng file | ✅ Ra đủ 3 dòng, giữ nguyên dấu tiếng Việt |
 
 > 📌 **Rút ra:** video có phụ đề (nhạc Việt có MV chính thức thường có) thì kết quả hoàn hảo. Video không phụ đề thì nên nâng model lên `small` để giảm sai sót.
 
@@ -473,26 +625,31 @@ Nếu không rõ dịch vụ mình dùng có theo chuẩn không — cứ hỏi 
 ## 9. Danh sách file trong tool
 
 ```
-📁 yt_lyrics\
-   ├── 🖱️ BAT-TOOL.bat       ← NHẤP ĐÚP VÀO ĐÂY ĐỂ CHẠY
-   ├── HUONG-DAN.md          ← File Đại đang đọc
-   ├── app.py                ← Bật giao diện web
-   ├── core.py               ← Phần lấy lời bài hát
-   ├── analyzer.py           ← Phần cho AI phân tích
-   ├── download_model.py     ← Tải model nhận dạng giọng nói
-   ├── requirements.txt      ← Danh sách thư viện cần cài
-   └── 📁 templates\
-        └── index.html       ← Giao diện
+📁 D:\Buddy Work AI\2026-10-06-08-41-26\youtube-lyrics-tool\   ← THƯ MỤC GỐC
+   ├── 🖱️ CHAY-TOOL.vbs      ← NHẤP ĐÚP VÀO ĐÂY ĐỂ CHẠY TOOL (không hiện cửa sổ đen)
+   ├── 🖱️ CHAY-TOOL.bat      ← Bản chạy cũ (có nháy cửa sổ đen rất nhanh rồi tắt)
+   ├── 🖱️ MO-FILE-ENV.bat    ← NHẤP ĐÚP ĐỂ MỞ FILE .env ĐIỀN KHOÁ API
+   ├── XEM-TRUOC-GIAO-DIEN.html ← Xem trước giao diện, không cần chạy tool
+   ├── .env                 ← Khoá API thật của Đại (đã tạo sẵn, xem mục 7)
+   ├── .env.MAU             ← Bản mẫu khoá API (giữ làm tham khảo)
+   ├── README.md
+   └── 📁 yt_lyrics\
+        ├── BAT-TOOL.bat     ← Bản chạy CÓ cửa sổ đen — dùng khi cần nhìn thấy lỗi
+        ├── tool.log         ← Nhật ký của tool (tự tạo khi chạy ngầm, xem khi trục trặc)
+        ├── HUONG-DAN.md     ← File Đại đang đọc
+        ├── app.py           ← Bật giao diện web
+        ├── core.py          ← Phần lấy lời bài hát
+        ├── analyzer.py      ← Phần cho AI phân tích
+        ├── download_model.py← Tải model nhận dạng giọng nói
+        ├── requirements.txt ← Danh sách thư viện cần cài
+        └── 📁 templates\
+             └── index.html  ← Giao diện
 
 📁 C:\Users\nguye\.cache\huggingface\   ← Nơi lưu model AI (tự tải về)
-
-📁 D:\Workbuddy AI\2026-10-05-21-21-00\
-   ├── .env.MAU             ← Bản mẫu khoá API (xem mục 7)
-   └── .env                 ← Khoá API thật của Đại (Đại tự tạo, xem mục 7)
 ```
 
-> Đại **không cần mở** các file này. Chỉ cần nhấp đúp `BAT-TOOL.bat`.
-> Riêng `.env` thì cần mở **một lần duy nhất** nếu muốn dùng 2 nút ⚡ — hướng dẫn ở **mục 7**.
+> Đại **không cần mở** các file này. Chỉ cần nhấp đúp **`CHAY-TOOL.vbs`** ở thư mục gốc.
+> Riêng `.env` thì mở **một lần duy nhất** bằng **`MO-FILE-ENV.bat`** nếu muốn dùng 2 nút ⚡ — hướng dẫn ở **mục 7**.
 
 ---
 

@@ -42,6 +42,27 @@
   button:disabled{opacity:.5;cursor:not-allowed}
   .hint{font-size:13px;color:var(--muted);margin-top:8px}
   .checkline{display:flex;align-items:center;gap:8px;margin-top:12px;font-size:14px;color:var(--muted)}
+
+  /* ---- Chọn nguồn: link YouTube hay file trong máy ---- */
+  .tabs{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap}
+  .tab{
+    padding:9px 16px;font-size:14px;font-weight:600;border-radius:999px;
+    border:1px solid var(--line);background:#fff;color:var(--muted);cursor:pointer;
+  }
+  .tab:hover{background:#f0f2f5}
+  .tab.active{background:var(--brand);border-color:var(--brand);color:#fff}
+  .tab-pane{margin-top:4px}
+  .path-line{
+    font-family:ui-monospace,Consolas,monospace;font-size:12.5px;
+    color:var(--muted);word-break:break-all;
+  }
+  .file-chip{
+    display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:10px;
+    padding:10px 12px;border:1px solid var(--line);border-radius:8px;
+    background:#fafbfc;font-size:14px;
+  }
+  .file-chip .name{font-weight:600}
+  .file-chip .size{color:var(--muted)}
   .console{
     background:#1b1f27;color:#d7dce5;border-radius:8px;padding:12px 14px;
     font-family:ui-monospace,Consolas,monospace;font-size:12.5px;
@@ -156,30 +177,67 @@
 <div class="wrap">
 
   <header>
-    <h1>🎵 Trích xuất lời bài hát YouTube</h1>
-    <p class="sub">Dán link video → lấy lời → cho AI đọc và phân tích.</p>
+    <h1>🎵 Trích xuất lời bài hát</h1>
+    <p class="sub">Link YouTube hoặc video có sẵn trong máy → lấy lời → cho AI đọc và phân tích.</p>
   </header>
 
   <!-- BƯỚC 1 -->
   <div class="card">
-    <label for="url">Bước 1 — Dán link video YouTube vào đây</label>
-    <div class="row">
-      <input type="text" id="url" placeholder="https://www.youtube.com/watch?v=..."
-             autocomplete="off" spellcheck="false">
-      <button class="primary" id="btn-extract">Trích xuất lời</button>
-    </div>
-    <div class="checkline">
-      <input type="checkbox" id="force-whisper">
-      <label for="force-whisper" style="font-weight:400;margin:0;cursor:pointer">
-        Bỏ qua phụ đề, nghe trực tiếp bằng AI (chậm hơn nhưng dùng cho mọi video)
-      </label>
-    </div>
-    <p class="hint" id="hint">
-      Hỗ trợ link dạng <code>youtube.com/watch?v=...</code>, <code>youtu.be/...</code>,
-      <code>youtube.com/shorts/...</code>
-    </p>
+    <label>Bước 1 — Chọn nguồn lấy lời</label>
 
-    <!-- Thanh tiến độ -->
+    <div class="tabs">
+      <button class="tab active" id="tab-yt">🔗 Link YouTube</button>
+      <button class="tab" id="tab-local">💻 Video trong máy</button>
+    </div>
+
+    <!-- Nguồn 1: link YouTube -->
+    <div class="tab-pane" id="pane-yt">
+      <div class="row">
+        <input type="text" id="url" placeholder="https://www.youtube.com/watch?v=..."
+               autocomplete="off" spellcheck="false">
+        <button class="primary" id="btn-extract">Trích xuất lời</button>
+      </div>
+      <div class="checkline">
+        <input type="checkbox" id="force-whisper">
+        <label for="force-whisper" style="font-weight:400;margin:0;cursor:pointer">
+          Bỏ qua phụ đề, nghe trực tiếp bằng AI (chậm hơn nhưng dùng cho mọi video)
+        </label>
+      </div>
+      <p class="hint" id="hint">
+        Hỗ trợ link dạng <code>youtube.com/watch?v=...</code>, <code>youtu.be/...</code>,
+        <code>youtube.com/shorts/...</code>
+      </p>
+    </div>
+
+    <!-- Nguồn 2: file có sẵn trong máy -->
+    <div class="tab-pane hidden" id="pane-local">
+      <div class="row">
+        <input type="text" id="local-path" placeholder="D:\Video\bai-hat.mp4"
+               autocomplete="off" spellcheck="false">
+        <button class="primary" id="btn-extract-local">Trích xuất lời</button>
+      </div>
+
+      <div class="row" style="margin-top:10px">
+        <button id="btn-pick-file">📁 Hoặc chọn file từ máy</button>
+        <input type="file" id="file-input" class="hidden"
+               accept="video/*,audio/*,.mp4,.mkv,.webm,.mov,.avi,.m4v,.ts,.mp3,.m4a,.wav,.flac,.ogg,.opus,.aac,.srt,.vtt,.txt">
+      </div>
+
+      <div id="local-status"></div>
+
+      <p class="hint" style="margin-top:12px">
+        <b>Cách lấy đường dẫn nhanh:</b> trong Windows Explorer, giữ <code>Shift</code> +
+        bấm chuột phải vào file → chọn <b>Copy as path</b> → dán vào ô trên.
+        Cách này tool đọc thẳng file gốc, nhanh hơn và không tốn thêm dung lượng.
+        Còn nút "Chọn file từ máy" sẽ sao chép tạm file lên tool rồi tự xoá sau khi nghe xong.
+      </p>
+      <p class="hint">
+        Nhận cả <b>video</b> (mp4, mkv, webm, mov…) và <b>file tiếng</b> (mp3, m4a, wav…).
+        Nếu chọn sẵn <b>file phụ đề</b> (.srt, .vtt, .txt) thì tool đọc luôn, không cần nghe.
+      </p>
+    </div>
+
+    <!-- Thanh tiến độ: dùng chung cho cả hai nguồn -->
     <div class="progress-box hidden" id="progress-box">
       <div class="progress-head">
         <span class="progress-label" id="progress-label">Đang xử lý...</span>
@@ -282,7 +340,19 @@
     </div>
   </div>
 
-  <footer>Tool chạy trên máy của Đại. Dữ liệu video không được gửi đi đâu ngoài YouTube.</footer>
+  <!-- Tắt tool: cần thiết vì tool chạy ngầm, không còn cửa sổ đen nào để đóng -->
+  <div class="card" style="display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap">
+    <div style="flex:1;min-width:220px">
+      <p class="sec-title" style="margin-bottom:2px">Tắt tool</p>
+      <p class="hint" style="margin:0">
+        Xong việc rồi thì bấm nút này. Tool chạy ngầm nên không có cửa sổ nào để đóng.
+      </p>
+    </div>
+    <button id="btn-tat-tool">⏻ Tắt tool</button>
+  </div>
+
+  <footer>Tool chạy trên máy của Đại. Video YouTube không bị tải về; file trong máy chỉ được đọc tại chỗ
+    (nếu dùng nút "Chọn file" thì file được sao chép tạm rồi tự xoá sau khi nghe xong).</footer>
 </div>
 
 <script>
@@ -291,20 +361,35 @@ const HAS_API_KEY = {{ 'true' if co_api_key else 'false' }};
 let current = null;   // {title, channel, lyrics}
 
 /* ---------- Thanh tiến độ ---------- */
-/* Trọng số: tải phần tiếng chiếm 15%, nghe và chép lời chiếm 85%.
-   Nhờ vậy thanh chạy liền mạch, không giật về 0 khi đổi giai đoạn. */
-const STAGE_WEIGHT = { download: 15, transcribe: 85 };
-const STAGE_OFFSET = { download: 0, transcribe: 15 };
+/* Mỗi nguồn có các giai đoạn khác nhau, nên chia sẵn khoảng phần trăm cho
+   từng giai đoạn để thanh chạy liền mạch, không giật về 0 khi đổi bước.
+     youtube : tải phần tiếng 0–15%  → nghe và chép lời 15–100%
+     path    : đọc file       0–3%   → nghe và chép lời 3–100%
+     upload  : gửi file       0–10%  → đọc file 10–13% → nghe và chép lời 13–100% */
+const STAGE_RANGES = {
+  youtube: { download: [0, 15], transcribe: [15, 100] },
+  path:    { file: [0, 3],      transcribe: [3, 100] },
+  upload:  { upload: [0, 10],   file: [10, 13], transcribe: [13, 100] },
+};
+
+const STAGE_LABELS = {
+  upload: '⬆️ Đang gửi file lên tool',
+  file: '📂 Đang đọc file trong máy',
+  download: '⬇️ Đang tải phần tiếng của video',
+  transcribe: '🎧 Đang nghe và chép lời',
+};
 
 const pg = {
   startTime: 0,
   stage: '',
   overall: 0,     // % tổng đã đạt
+  ranges: STAGE_RANGES.youtube,
 
-  reset() {
+  reset(mode) {
     this.startTime = Date.now();
     this.stage = '';
     this.overall = 0;
+    this.ranges = STAGE_RANGES[mode] || STAGE_RANGES.youtube;
     $('progress-box').classList.remove('hidden');
     $('progress-fill').classList.remove('done');
     $('progress-fill').classList.add('active');
@@ -331,16 +416,13 @@ const pg = {
   update(stage, pct, note) {
     this.stage = stage;
     // Quy đổi % của giai đoạn hiện tại sang % tổng
-    const w = STAGE_WEIGHT[stage] ?? 100;
-    const off = STAGE_OFFSET[stage] ?? 0;
-    let overall = off + (pct / 100) * w;
+    const [lo, hi] = this.ranges[stage] || [0, 100];
+    let overall = lo + (pct / 100) * (hi - lo);
     // Không cho thanh chạy lùi
     overall = Math.max(overall, this.overall);
     this.overall = overall;
 
-    const label = stage === 'download'
-      ? '⬇️ Đang tải phần tiếng của video'
-      : '🎧 Đang nghe và chép lời';
+    const label = STAGE_LABELS[stage] || 'Đang xử lý';
 
     $('progress-fill').style.width = overall + '%';
     $('progress-pct').textContent = Math.round(overall) + '%';
@@ -377,21 +459,40 @@ const pg = {
   }
 };
 
-/* ---------- Trích xuất ---------- */
-$('btn-extract').addEventListener('click', async () => {
-  const url = $('url').value.trim();
-  if (!url) { alert('Đại chưa dán link video.'); return; }
+/* ---------- Chọn nguồn ---------- */
+function switchTab(which) {
+  const isYt = which === 'yt';
+  $('tab-yt').classList.toggle('active', isYt);
+  $('tab-local').classList.toggle('active', !isYt);
+  $('pane-yt').classList.toggle('hidden', !isYt);
+  $('pane-local').classList.toggle('hidden', isYt);
+  (isYt ? $('url') : $('local-path')).focus();
+}
+$('tab-yt').addEventListener('click', () => switchTab('yt'));
+$('tab-local').addEventListener('click', () => switchTab('local'));
 
-  const force = $('force-whisper').checked ? '1' : '0';
-  $('btn-extract').disabled = true;
+/* ---------- Chạy một luồng xử lý, hiện tiến trình dần ---------- */
+async function runStream(fetchUrl, opts = {}) {
+  const btn = opts.button;
+  if (btn) btn.disabled = true;
+  if (!opts.keepProgress) pg.reset(opts.mode || 'youtube');
+
   $('card-result').classList.add('hidden');
   $('card-analysis').classList.add('hidden');
-  $('console').textContent = '';
-  $('console').textContent += '▶ Bắt đầu xử lý...\n';
-  pg.reset();
+  $('console').textContent = opts.keepConsole
+    ? $('console').textContent + '▶ Bắt đầu nghe file...\n'
+    : '▶ Bắt đầu xử lý...\n';
 
   try {
-    const res = await fetch(`/api/extract/stream?url=${encodeURIComponent(url)}&whisper=${force}`);
+    const res = await fetch(fetchUrl);
+    if (!res.ok) {
+      let msg = `Máy chủ trả lỗi ${res.status}`;
+      try { const d = await res.json(); if (d && d.error) msg = d.error; } catch(e) {}
+      $('console').textContent += '❌ ' + msg + '\n';
+      pg.fail(msg);
+      return;
+    }
+
     const reader = res.body.getReader();
     const decoder = new TextDecoder();
     let buf = '';
@@ -428,13 +529,117 @@ $('btn-extract').addEventListener('click', async () => {
     $('console').textContent += '❌ Lỗi kết nối: ' + err.message + '\n';
     pg.fail('Mất kết nối tới tool');
   } finally {
-    $('btn-extract').disabled = false;
+    if (btn) btn.disabled = false;
   }
+}
+
+/* ---------- Nguồn 1: link YouTube ---------- */
+$('btn-extract').addEventListener('click', () => {
+  const url = $('url').value.trim();
+  if (!url) { alert('Đại chưa dán link video.'); return; }
+  const force = $('force-whisper').checked ? '1' : '0';
+  runStream(`/api/extract/stream?url=${encodeURIComponent(url)}&whisper=${force}`,
+            {mode: 'youtube', button: $('btn-extract')});
 });
 
 /* Cho phép nhấn Enter trong ô link */
 $('url').addEventListener('keydown', e => {
   if (e.key === 'Enter') $('btn-extract').click();
+});
+
+/* ---------- Nguồn 2: file trong máy ---------- */
+let pendingFile = null;   // file Đại vừa chọn từ hộp thoại (chưa gửi lên tool)
+
+$('btn-pick-file').addEventListener('click', () => $('file-input').click());
+
+$('file-input').addEventListener('change', () => {
+  const f = $('file-input').files[0];
+  if (!f) return;
+  pendingFile = f;
+  const mb = f.size / 1048576;
+  const sizeTxt = mb >= 1024 ? (mb / 1024).toFixed(2) + ' GB' : mb.toFixed(1) + ' MB';
+  $('local-status').innerHTML =
+    `<div class="file-chip">📁 <span class="name">${esc(f.name)}</span>`
+    + `<span class="size">(${sizeTxt})</span>`
+    + `<span class="size">— bấm "Trích xuất lời" để bắt đầu</span>`
+    + `<button id="btn-unpick" style="padding:4px 10px;font-size:12px">✕ Bỏ chọn</button>`
+    + `</div>`
+    + (mb > 500
+        ? '<div class="notice warn">💡 File khá lớn. Nếu biết đường dẫn, dán vào ô trên sẽ nhanh hơn, '
+          + 'vì tool đọc thẳng file gốc chứ không phải sao chép lại.</div>'
+        : '');
+
+  // Bỏ file đã chọn (để quay lại dùng ô đường dẫn)
+  $('btn-unpick').addEventListener('click', () => {
+    pendingFile = null;
+    $('file-input').value = '';
+    $('local-status').innerHTML = '';
+  });
+});
+
+/** Gửi file lên tool, báo % thật trong lúc gửi (fetch thường không báo được). */
+function uploadFile(file, onProgress) {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', '/api/upload');
+    xhr.upload.onprogress = e => {
+      if (e.lengthComputable) onProgress(e.loaded / e.total * 100);
+    };
+    xhr.onload = () => {
+      let d = {};
+      try { d = JSON.parse(xhr.responseText); } catch(e) {}
+      if (xhr.status === 200 && d.ok) resolve(d);
+      else reject(new Error(d.error || ('Máy chủ trả lỗi ' + xhr.status)));
+    };
+    xhr.onerror = () => reject(new Error('Không gửi được file lên tool.'));
+    const fd = new FormData();
+    fd.append('file', file);
+    xhr.send(fd);
+  });
+}
+
+$('btn-extract-local').addEventListener('click', async () => {
+  const btn = $('btn-extract-local');
+  const path = $('local-path').value.trim();
+
+  // Ưu tiên file vừa chọn từ hộp thoại; nếu không có thì dùng đường dẫn dán vào.
+  if (pendingFile) {
+    btn.disabled = true;
+    $('card-result').classList.add('hidden');
+    $('card-analysis').classList.add('hidden');
+    $('console').textContent = '▶ Đang gửi file lên tool...\n';
+    pg.reset('upload');
+
+    let up;
+    try {
+      up = await uploadFile(pendingFile, pct =>
+        pg.update('upload', pct, `Đã gửi ${Math.round(pct)}%`));
+    } catch (err) {
+      $('console').textContent += '❌ ' + err.message + '\n';
+      pg.fail(err.message);
+      btn.disabled = false;
+      return;
+    }
+    btn.disabled = false;
+    $('console').textContent += `✅ Đã nhận file ${up.name} (${up.size_mb} MB).\n`;
+
+    // Gửi xong thì chuyển sang bước nghe; giữ nguyên thanh tiến độ đang có
+    runStream(`/api/extract/local/stream?token=${encodeURIComponent(up.token)}`,
+              {mode: 'upload', keepProgress: true, keepConsole: true, button: btn});
+    return;
+  }
+
+  if (!path) {
+    alert('Đại chưa chọn file. Hãy bấm "📁 Hoặc chọn file từ máy", '
+        + 'hoặc dán đường dẫn file vào ô trên.');
+    return;
+  }
+  runStream(`/api/extract/local/stream?path=${encodeURIComponent(path)}`,
+            {mode: 'path', button: btn});
+});
+
+$('local-path').addEventListener('keydown', e => {
+  if (e.key === 'Enter') $('btn-extract-local').click();
 });
 
 /* ---------- Hiển thị kết quả ---------- */
@@ -450,20 +655,35 @@ function showResult(d) {
     return;
   }
 
-  // Thông tin video
+  // Thông tin nguồn
   const img = d.thumbnail
     ? `<img src="${d.thumbnail}" alt="thumbnail">` : '';
-  const badge = d.source === 'subtitle'
-    ? `<span class="badge sub">✅ Lấy từ phụ đề có sẵn${d.language ? ' (' + d.language + ')' : ''}</span>`
-    : `<span class="badge whisper">⚠️ Nhận dạng tự động bằng AI${d.detected_language ? ' (' + d.detected_language + ')' : ''}</span>`;
+
+  let badge;
+  if (d.source === 'subtitle') {
+    badge = `<span class="badge sub">✅ Lấy từ phụ đề có sẵn`
+          + `${d.language ? ' (' + d.language + ')' : ''}</span>`;
+  } else if (d.source === 'file_subtitle') {
+    badge = `<span class="badge sub">📄 Đọc từ file phụ đề trong máy</span>`;
+  } else {
+    badge = `<span class="badge whisper">⚠️ Nhận dạng tự động bằng AI`
+          + `${d.detected_language ? ' (' + d.detected_language + ')' : ''}</span>`;
+  }
+
+  const durTxt = d.duration ? ` · ⏱ ${fmtTime(d.duration)}` : '';
+  const sourceLine = d.file_path
+    ? `<p class="path-line" style="margin-top:2px">📂 ${esc(d.file_path)}`
+      + `${d.file_size_mb ? ' (' + d.file_size_mb + ' MB)' : ''}</p>`
+    : `<p style="margin-top:2px">
+         <a href="${d.web_url}" target="_blank" rel="noopener">Mở video trên YouTube ↗</a>
+       </p>`;
+
   $('video-info').innerHTML = `
     ${img}
     <div class="meta">
       <h2>${esc(d.title || '(không có tiêu đề)')}</h2>
-      <p>${esc(d.channel || '')}</p>
-      <p style="margin-top:2px">
-        <a href="${d.web_url}" target="_blank" rel="noopener">Mở video trên YouTube ↗</a>
-      </p>
+      <p>${esc(d.channel || '')}${durTxt}</p>
+      ${sourceLine}
       ${badge}
     </div>`;
 
@@ -521,6 +741,16 @@ function esc(s) {
   return String(s).replace(/[&<>"']/g, c => ({
     '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
   }[c]));
+}
+
+/** Đổi số giây thành dạng 3:45 hoặc 1:02:30 */
+function fmtTime(sec) {
+  sec = Math.max(0, Math.round(sec || 0));
+  const h = Math.floor(sec / 3600);
+  const m = Math.floor((sec % 3600) / 60);
+  const s = sec % 60;
+  const pad = n => String(n).padStart(2, '0');
+  return h ? `${h}:${pad(m)}:${pad(s)}` : `${m}:${pad(s)}`;
 }
 
 /* ---------- Phân tích ---------- */
@@ -685,6 +915,10 @@ async function copyText(text, btn) {
 
 $('btn-clear').addEventListener('click', () => {
   $('url').value = '';
+  $('local-path').value = '';
+  $('file-input').value = '';
+  $('local-status').innerHTML = '';
+  pendingFile = null;
   $('console').textContent = '';
   $('card-result').classList.add('hidden');
   $('card-analysis').classList.add('hidden');
@@ -696,6 +930,31 @@ $('btn-clear').addEventListener('click', () => {
   pg.hide();
   current = null;
   $('url').focus();
+});
+
+/* ---------- Tắt tool ---------- */
+/* Tool chạy ngầm (không cửa sổ), nên việc tắt do trang web làm. */
+$('btn-tat-tool').addEventListener('click', async () => {
+  if (!confirm('Tắt tool bây giờ?\n\nTrang này sẽ ngừng hoạt động cho tới khi Đại mở lại.')) return;
+  const btn = $('btn-tat-tool');
+  btn.disabled = true;
+  btn.textContent = '⏳ Đang tắt...';
+
+  try {
+    await fetch('/api/shutdown', {
+      method: 'POST',
+      headers: {'X-Tool-Action': 'shutdown'}
+    });
+  } catch (e) {
+    // Tool tắt là chuyện bình thường — mất kết nối lúc này không phải lỗi
+  }
+
+  document.body.innerHTML =
+    '<div class="wrap"><div class="card" style="text-align:center;padding:40px 20px">'
+    + '<p style="font-size:20px;font-weight:700;margin:0 0 8px">✅ Đã tắt tool</p>'
+    + '<p class="hint" style="margin:0">Đại đóng tab này được rồi.<br>'
+    + 'Lần sau mở lại: nhấp đúp file <code>CHAY-TOOL.vbs</code> ở thư mục gốc dự án.</p>'
+    + '</div></div>';
 });
 
 /* ---------- Đổi dịch vụ và model ---------- */

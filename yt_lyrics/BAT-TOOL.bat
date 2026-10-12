@@ -7,11 +7,14 @@ echo ============================================================
 echo   TOOL TRICH XUAT LOI BAI HAT YOUTUBE
 echo ============================================================
 echo.
-echo   Dang bat tool, cho vai giay...
+echo   Day la ban chay CO CUA SO - dung khi can xem thong bao loi.
+echo   (Ban chay an, khong hien cua so: nhan dup file CHAY-TOOL.vbs
+echo    o thu muc goc du an.)
+echo.
+echo   Dang bat tool, trinh duyet se tu mo sau vai giay...
 echo.
 
 set WHISPER_MODEL=base
-start "" http://127.0.0.1:5000
 
 "C:\Users\nguye\.workbuddy-ai\binaries\python\envs\default\Scripts\python.exe" app.py
 

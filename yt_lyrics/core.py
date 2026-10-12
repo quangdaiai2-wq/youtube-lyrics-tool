@@ -1,10 +1,17 @@
 """
-core.py - Trích xuất lyrics từ video YouTube.
+core.py - Trích xuất lyrics từ video YouTube hoặc từ file có sẵn trong máy.
 
-Luồng xử lý:
-  1. Lấy thông tin video + danh sách phụ đề có sẵn (yt-dlp).
-  2. Nếu có phụ đề  -> dùng luôn (nhanh, chính xác).
-  3. Nếu không có  -> tải audio -> nhận dạng giọng nói (faster-whisper).
+Hai nguồn vào, cùng một đầu ra (LyricResult):
+
+A. Link YouTube  -> get_lyrics()
+   1. Lấy thông tin video + danh sách phụ đề có sẵn (yt-dlp).
+   2. Nếu có phụ đề  -> dùng luôn (nhanh, chính xác).
+   3. Nếu không có  -> tải audio -> nhận dạng giọng nói (faster-whisper).
+
+B. File trong máy -> get_lyrics_from_file()
+   1. Nếu là file phụ đề (.srt/.vtt/.txt) -> đọc thẳng, không cần nghe.
+   2. Nếu là video/audio -> nghe trực tiếp từ file, KHÔNG copy và KHÔNG
+      cần ffmpeg (thư viện PyAV giải mã sẵn trong máy).
 
 Không cần người dùng hiểu gì bên trong file này.
 """
@@ -34,6 +41,20 @@ PREFERRED_SUB_LANGS = ["vi", "en"]
 # "small" hoặc "medium" (chậm hơn, nặng hơn).
 WHISPER_MODEL = os.environ.get("WHISPER_MODEL", "base")
 
+# File phụ đề: đọc thẳng ra lời, không cần nghe lại
+SUBTITLE_EXTS = {".srt", ".vtt", ".sbv", ".txt"}
+
+# File nghe được (video hoặc audio). Danh sách để báo lỗi rõ ràng khi Đại
+# chọn nhầm file; thực tế PyAV thử mở được là chạy, không phụ thuộc danh sách.
+MEDIA_EXTS = {
+    # video
+    ".mp4", ".mkv", ".webm", ".mov", ".avi", ".flv", ".m4v", ".ts",
+    ".wmv", ".mpg", ".mpeg", ".3gp", ".ogv", ".rmvb",
+    # audio
+    ".mp3", ".m4a", ".wav", ".flac", ".ogg", ".oga", ".opus", ".aac",
+    ".wma", ".aiff", ".aif", ".amr", ".ape", ".mka",
+}
+
 _whisper_model_cache = {}
 
 
@@ -47,9 +68,11 @@ class LyricResult:
     thumbnail: str = ""
     web_url: str = ""
     lyrics: str = ""
-    source: str = ""          # "subtitle" | "whisper" | ""
+    source: str = ""          # "subtitle" | "whisper" | "file_subtitle" | ""
     language: str = ""
     detected_language: str = ""
+    file_path: str = ""       # đường dẫn file trong máy (nếu lấy từ file)
+    file_size_mb: float = 0.0
     warnings: list[str] = field(default_factory=list)
     error: str = ""
 
@@ -81,8 +104,13 @@ def extract_video_id(url: str) -> str:
     return ""
 
 
-def _clean_vtt(raw: str) -> str:
-    """Chuyển nội dung phụ đề .vtt thành text sạch, đã gộp trùng."""
+def _clean_subtitle(raw: str) -> str:
+    """
+    Chuyển nội dung phụ đề (.vtt hoặc .srt) thành text sạch, đã gộp trùng.
+
+    Dùng chung cho cả hai định dạng: các dòng cần bỏ giống nhau
+    (số thứ tự, dòng thời gian có "-->", thẻ định dạng).
+    """
     lines = raw.splitlines()
     out: list[str] = []
     for line in lines:
@@ -172,7 +200,7 @@ def fetch_subtitle(url: str, video_id: str, workdir: Path,
         vtt_files.sort(key=rank)
         chosen = vtt_files[0]
         raw = chosen.read_text(encoding="utf-8", errors="ignore")
-        text = _clean_vtt(raw)
+        text = _clean_subtitle(raw)
         if text:
             lang = chosen.name.split(".")[-2] if chosen.name.count(".") >= 2 else ""
             kind_vi = "phụ đề do người đăng" if kind == "manual" else "phụ đề tự động của YouTube"
@@ -406,7 +434,194 @@ def fetch_metadata(url: str) -> dict:
 
 
 # ---------------------------------------------------------------------------
-# Hàm chính
+# Nguồn B: file có sẵn trong máy
+# ---------------------------------------------------------------------------
+
+def _normalize_local_path(raw: str) -> str:
+    """
+    Chuẩn hoá đường dẫn Đại dán vào.
+
+    Khi bấm "Copy as path" trong Windows Explorer, đường dẫn bị bọc trong
+    dấu ngoặc kép: "D:\\Video\\bai hat.mp4" -> phải bỏ ngoặc kép đi.
+    """
+    s = (raw or "").strip()
+    while len(s) >= 2 and s[0] == s[-1] and s[0] in ("'", '"'):
+        s = s[1:-1].strip()
+    return s
+
+
+def probe_media(path: Path, log: Callable[[str], None] = lambda m: None) -> dict:
+    """
+    Đọc thông tin cơ bản của file media mà KHÔNG giải mã toàn bộ
+    (chỉ đọc phần đầu file nên rất nhanh, kể cả file vài GB).
+
+    Trả về dict: duration, has_audio, has_video, audio_codec, sample_rate,
+    và "error" nếu không mở được file.
+    """
+    import av
+
+    info: dict = {
+        "duration": 0, "has_audio": False, "has_video": False,
+        "audio_codec": "", "sample_rate": 0, "error": "",
+    }
+    try:
+        with av.open(str(path)) as container:
+            if container.duration:
+                info["duration"] = int(container.duration / av.time_base)
+            for s in container.streams:
+                if s.type == "audio" and not info["has_audio"]:
+                    info["has_audio"] = True
+                    info["audio_codec"] = getattr(s.codec_context, "name", "") or ""
+                    info["sample_rate"] = int(getattr(s, "rate", 0) or 0)
+                elif s.type == "video":
+                    info["has_video"] = True
+    except Exception as exc:  # noqa: BLE001
+        info["error"] = f"{type(exc).__name__}: {exc}"
+    return info
+
+
+def _read_subtitle_file(path: Path, log: Callable[[str], None] = lambda m: None
+                        ) -> tuple[str, str]:
+    """
+    Đọc file phụ đề (.srt/.vtt/.txt) thành text sạch.
+
+    Thử lần lượt vài bảng mã vì phụ đề tải về thường ở UTF-8, nhưng file
+    tạo bằng Notepad trên Windows cũ lại là CP1258/CP1252.
+
+    Trả về (text, ngôn ngữ đoán được hoặc "").
+    """
+    raw = ""
+    for enc in ("utf-8-sig", "utf-8", "cp1258", "cp1252", "latin-1"):
+        try:
+            raw = path.read_text(encoding=enc)
+            if raw.strip():
+                if enc not in ("utf-8-sig", "utf-8"):
+                    log(f"  (File dùng bảng mã {enc})")
+                break
+        except (UnicodeDecodeError, LookupError):
+            continue
+    if not raw.strip():
+        return "", ""
+
+    text = _clean_subtitle(raw)
+    # Đoán nhẹ: thấy ký tự riêng của tiếng Việt thì coi là tiếng Việt,
+    # còn lại để trống (không đoán bừa) — giao diện sẽ hiện nút dịch dự phòng.
+    lang = "vi" if re.search(r"[ăâđêôơưĂÂĐÊÔƠƯ]", text) else ""
+    return text, lang
+
+
+def get_lyrics_from_file(file_path: str | Path,
+                         log: Callable[[str], None] = lambda m: None,
+                         progress: Callable[[str, float, str], None] | None = None
+                         ) -> LyricResult:
+    """
+    Lấy lyrics từ một file có sẵn trong máy (video, audio, hoặc phụ đề).
+
+    Khác luồng YouTube ở chỗ: KHÔNG tải gì về, KHÔNG copy file, KHÔNG cần
+    ffmpeg — đọc thẳng file gốc rồi nghe.
+
+    progress: hàm nhận (giai_đoạn, phần_trăm, mô_tả); giai đoạn là "file"
+    (kiểm tra/đọc thông tin file) hoặc "transcribe" (nghe và chép lời).
+    """
+    def report(stage: str, pct: float, note: str = "") -> None:
+        if progress:
+            progress(stage, max(0.0, min(100.0, pct)), note)
+
+    raw = _normalize_local_path(str(file_path or ""))
+    if not raw:
+        return LyricResult(ok=False, error="Chưa có đường dẫn file. "
+                                           "Đại hãy chọn file hoặc dán đường dẫn vào ô.")
+
+    p = Path(raw)
+    if not p.exists():
+        return LyricResult(ok=False, error=f"Không tìm thấy file tại: {raw}\n"
+                                           "Kiểm tra lại đường dẫn (nhớ giữ nguyên phần đuôi file, "
+                                           "ví dụ .mp4) hoặc dùng nút \"Chọn file từ máy\".")
+    if p.is_dir():
+        return LyricResult(ok=False, error=f"Đường dẫn này là một thư mục, không phải file: {raw}")
+
+    size_mb = p.stat().st_size / 1_048_576
+    result = LyricResult(ok=False, title=p.stem, file_path=str(p),
+                         file_size_mb=round(size_mb, 1))
+
+    log(f"Đang đọc file trong máy: {p.name} ({size_mb:.1f} MB)")
+    report("file", 30, f"Đã nhận file {p.name} ({size_mb:.1f} MB)")
+
+    ext = p.suffix.lower()
+
+    # --- Nhánh 1: file phụ đề -> đọc thẳng, khỏi tốn công nghe ---
+    if ext in SUBTITLE_EXTS:
+        log("File này là phụ đề — đọc trực tiếp, không cần nghe lại.")
+        text, lang = _read_subtitle_file(p, log=log)
+        if not text.strip():
+            result.error = ("File phụ đề này không có nội dung đọc được, "
+                            "hoặc định dạng không nhận ra.")
+            return result
+        result.ok = True
+        result.lyrics = text
+        result.source = "file_subtitle"
+        result.language = lang
+        result.detected_language = lang
+        result.channel = f"File phụ đề trong máy ({ext.lstrip('.').upper()})"
+        log(f"  ✅ Đã đọc {len(text)} ký tự từ file phụ đề.")
+        report("file", 100, "Đọc xong phụ đề")
+        return result
+
+    # --- Nhánh 2: video/audio -> nghe và chép lời ---
+    if ext not in MEDIA_EXTS:
+        result.warnings.append(
+            f"Đuôi file '{ext or '(không có)'}' không nằm trong danh sách thường gặp, "
+            "nhưng tool vẫn thử nghe."
+        )
+
+    log("Đang kiểm tra file xem có phần tiếng không...")
+    info = probe_media(p, log=log)
+    if info.get("error"):
+        result.error = (f"Không mở được file này: {info['error']}\n"
+                        "File có thể bị hỏng, đang tải dở, hoặc là định dạng "
+                        "mà thư viện âm thanh không đọc được.")
+        return result
+    if not info["has_audio"]:
+        result.error = "File này không có phần tiếng, nên không nghe được lời."
+        return result
+
+    result.duration = int(info["duration"] or 0)
+    result.channel = (f"File trong máy ({ext.lstrip('.').upper()})"
+                      + (" — video" if info["has_video"] else " — chỉ có tiếng"))
+    log(f"  ✅ File {'video' if info['has_video'] else 'audio'} dài "
+        f"{_fmt_time(result.duration)}, tiếng {info['audio_codec']} "
+        f"{info['sample_rate']} Hz.")
+    report("file", 100, "Đã đọc xong thông tin file")
+
+    # Nghe trực tiếp từ file gốc: không copy, không tải, không cần ffmpeg
+    try:
+        lyrics, lang = transcribe_audio(
+            p, p.parent, log=log,
+            progress=((lambda pct, note: report("transcribe", pct, note))
+                      if progress else None),
+        )
+    except Exception as exc:  # noqa: BLE001
+        result.error = f"Lỗi khi nghe file: {type(exc).__name__}: {exc}"
+        return result
+
+    if not lyrics.strip():
+        result.error = ("Đã nghe hết file nhưng không nhận ra lời nào "
+                        "(có thể chỉ có nhạc không lời, hoặc tiếng quá nhỏ).")
+        return result
+
+    result.ok = True
+    result.lyrics = lyrics
+    result.source = "whisper"
+    result.detected_language = lang
+    result.warnings.append(
+        f"Lời do AI tự nghe và chép lại (ngôn ngữ: {lang or 'không xác định'}). "
+        "Có thể sai vài chữ, đặc biệt là tên riêng hoặc từ chuyên ngành."
+    )
+    return result
+
+
+# ---------------------------------------------------------------------------
+# Hàm chính cho luồng YouTube
 # ---------------------------------------------------------------------------
 
 def get_lyrics(url: str, force_whisper: bool = False,
@@ -500,12 +715,19 @@ def get_lyrics(url: str, force_whisper: bool = False,
 
 
 if __name__ == "__main__":
-    # Cho phép chạy nhanh từ dòng lệnh: python core.py <link>
+    # Chạy nhanh từ dòng lệnh:
+    #   python core.py <link YouTube>
+    #   python core.py <đường dẫn file trong máy>     (tự nhận ra là file)
     import argparse
 
     ap = argparse.ArgumentParser()
-    ap.add_argument("url")
+    ap.add_argument("nguon", help="Link YouTube hoặc đường dẫn file trong máy")
     ap.add_argument("--whisper", action="store_true", help="Bỏ qua phụ đề, dùng nhận dạng giọng nói")
     args = ap.parse_args()
-    res = get_lyrics(args.url, force_whisper=args.whisper, log=lambda m: print(m, flush=True))
+
+    if Path(_normalize_local_path(args.nguon)).exists():
+        res = get_lyrics_from_file(args.nguon, log=lambda m: print(m, flush=True))
+    else:
+        res = get_lyrics(args.nguon, force_whisper=args.whisper,
+                         log=lambda m: print(m, flush=True))
     print(json.dumps(res.to_dict(), ensure_ascii=False, indent=2))
